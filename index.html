@@ -1,0 +1,3150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<!-- سياسة أمان المحتوى: تمنع الاتصال بأي سيرفر غير الـ API الخاص بنا (يحدّ من سرقة التوكن لو صار XSS).
+     ملاحظة: لو غيّرت عنوان الـ API (دومين مخصص مثلاً) لازم تعدّل connect-src هون وعنوان API_BASE بالسكربت. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://mostodaa-backend.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>مستودع مسروجي · نظام العمولات (متصل بالسيرفر)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5FAF7;
+    --surface:#FFFFFF;
+    --ink:#12302B;
+    --ink-soft:#5B7570;
+    --primary:#0F5D52;
+    --primary-dark:#0A423A;
+    --primary-tint:#E4F1EC;
+    --accent:#C89B3C;
+    --accent-tint:#FBF1DB;
+    --danger:#C0392B;
+    --border:#DCE8E3;
+    --radius:16px;
+    --shadow:0 10px 30px -14px rgba(15,93,82,.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(900px 500px at 100% -10%, #DDEFE6 0%, transparent 60%),
+      radial-gradient(700px 400px at -10% 110%, #F3E9CC 0%, transparent 55%),
+      var(--bg);
+    min-height:100vh;
+    font-family:'Tajawal',sans-serif;
+    color:var(--ink);
+  }
+  h1,h2,h3,.display{font-family:'Cairo',sans-serif;}
+  .num{font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;}
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- shared layout ---------- */
+  .center-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 18px;}
+  .card{
+    width:100%;max-width:400px;background:var(--surface);
+    border-radius:22px;padding:30px 26px;box-shadow:var(--shadow);
+    border:1px solid var(--border);
+  }
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+  .brand-mark{
+    width:46px;height:46px;border-radius:13px;flex:none;
+    background:linear-gradient(155deg,var(--primary),var(--primary-dark));
+    display:flex;align-items:center;justify-content:center;
+    color:var(--accent-tint);font-family:'Cairo';font-weight:800;font-size:20px;
+    box-shadow:0 6px 16px -6px rgba(10,66,58,.55);
+  }
+  .brand-text .t1{font-family:'Cairo';font-weight:800;font-size:18px;line-height:1.1;color:var(--primary-dark);}
+  .brand-text .t2{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .field .hint{font-size:11.5px;color:var(--ink-soft);margin-top:5px;}
+  input[type=text],input[type=tel],input[type=password],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:12px 13px;border-radius:11px;border:1.5px solid var(--border);
+    font-family:'Tajawal';font-size:15px;background:#FCFEFD;color:var(--ink);
+    outline:none;transition:border-color .15s, box-shadow .15s;
+  }
+  textarea{resize:vertical;}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);}
+  input.err{border-color:var(--danger);}
+  .row2{display:flex;gap:10px;}
+  .row2>*{flex:1;}
+  .row3{display:flex;gap:10px;}
+  .row3>*{flex:1;}
+
+  button{font-family:'Tajawal';cursor:pointer;border:none;outline:none;}
+  .btn{
+    width:100%;padding:13px 14px;border-radius:12px;font-weight:700;font-size:15px;
+    background:var(--primary);color:#fff;transition:transform .12s, background .15s, opacity .15s;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn:active{transform:scale(.98);}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;}
+  .btn.ghost{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
+  .btn.ghost:hover{background:var(--primary-tint);}
+  .btn.accent{background:var(--accent);color:#3A2C08;}
+  .btn.accent:hover{background:#B78A2E;}
+  .btn.sm{padding:9px 12px;font-size:13px;border-radius:9px;width:auto;}
+  .btn.danger{background:#FBE7E4;color:var(--danger);}
+  .link-btn{background:none;border:none;color:var(--primary);font-weight:700;font-size:13.5px;padding:0;}
+
+  .divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:var(--ink-soft);font-size:12px;}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .back-row button{background:none;color:var(--ink-soft);font-size:13px;font-weight:700;padding:4px 0;}
+
+  .otp-banner{
+    background:var(--accent-tint);border:1px dashed #D8B564;border-radius:11px;
+    padding:11px 12px;font-size:13.5px;color:#7A5A16;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .otp-banner .code{font-family:'IBM Plex Mono';font-weight:600;font-size:16px;letter-spacing:3px;}
+
+  .badge{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
+  .badge.ok{background:#E1F3EA;color:#1D7A4C;}
+  .badge.pending{background:#FBF1DB;color:#8A6512;}
+  .badge.rejected{background:#FBE4E1;color:#A3352A;}
+
+  .toast-wrap{position:fixed;top:16px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:999;pointer-events:none;}
+  .toast{
+    background:var(--primary-dark);color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;font-weight:600;
+    box-shadow:0 8px 22px -8px rgba(0,0,0,.4);animation:toastIn .25s ease-out;
+  }
+  .toast.danger{background:#7A2A21;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---------- ticket / receipt signature ---------- */
+  .ticket{
+    position:relative;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px 14px 0 0;padding:18px 18px 26px 18px;margin-bottom:22px;
+    box-shadow:0 8px 20px -12px rgba(15,93,82,.25);
+  }
+  .ticket::after{
+    content:'';position:absolute;left:0;right:0;bottom:-11px;height:11px;
+    background:
+      linear-gradient(-45deg, var(--bg) 6px, transparent 0) 0 0/12px 12px repeat-x,
+      linear-gradient(45deg, var(--bg) 6px, transparent 0) 0 0/12px 12px repeat-x;
+  }
+
+  /* ---------- app shell ---------- */
+  .app-header{
+    background:linear-gradient(155deg,var(--primary),var(--primary-dark));color:#fff;
+    padding:18px 20px 22px;border-radius:0 0 20px 20px;
+  }
+  .app-header-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .app-header .pharmacy{font-family:'Cairo';font-weight:800;font-size:17px;}
+  .app-header .sub{font-size:12px;opacity:.85;margin-top:2px;}
+  .app-header .logout{background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:7px 12px;border-radius:9px;font-weight:700;}
+  .app-header .logout:hover{background:rgba(255,255,255,.28);}
+
+  .app-body{flex:1;padding:18px 16px 90px;max-width:520px;margin:0 auto;width:100%;}
+  .app-body.wide{max-width:1000px;}
+  .app-body.noTabbar{padding-bottom:24px;}
+
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);
+    display:flex;max-width:520px;margin:0 auto;box-shadow:0 -8px 20px -14px rgba(0,0,0,.15);
+  }
+  .tabbar.wide{max-width:1000px;}
+  .tabbar button{
+    flex:1;background:none;padding:11px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--ink-soft);font-size:10.5px;font-weight:700;
+  }
+  .tabbar button .ic{font-size:18px;}
+  .tabbar button.active{color:var(--primary);}
+  .tabbar-fixed-wrap{max-width:520px;margin:0 auto;width:100%;position:fixed;bottom:0;left:0;right:0;}
+  .tabbar-fixed-wrap.wide{max-width:1000px;}
+
+  .section-title{font-family:'Cairo';font-weight:800;font-size:16.5px;margin:2px 0 14px;color:var(--primary-dark);}
+
+  .step-block{margin-bottom:18px;}
+  .step-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;}
+  .step-num{
+    width:20px;height:20px;border-radius:50%;background:var(--primary-tint);color:var(--primary);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:none;
+  }
+  .step-done .step-num{background:var(--primary);color:#fff;}
+
+  select.cat-select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%230F5D52' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:14px center;padding-left:34px;}
+
+  .commission-hero{
+    text-align:center;padding:14px 6px 8px;
+  }
+  .commission-hero .lbl{font-size:13px;color:var(--ink-soft);font-weight:700;}
+  .commission-hero .amt{font-family:'Cairo';font-weight:800;font-size:34px;color:var(--accent);margin:6px 0 2px;}
+  .commission-hero .amt .cur{font-size:16px;color:var(--ink-soft);font-weight:700;margin-right:6px;}
+
+  .history-summary{
+    background:linear-gradient(155deg,var(--primary),var(--primary-dark));color:#fff;
+    border-radius:16px;padding:18px 20px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .history-summary .lbl{font-size:12px;opacity:.85;}
+  .history-summary .val{font-family:'Cairo';font-weight:800;font-size:26px;margin-top:3px;}
+  .history-summary .cnt{text-align:left;font-size:12px;opacity:.9;}
+  .history-summary .cnt b{font-family:'IBM Plex Mono';font-size:16px;display:block;}
+
+  .sale-row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .sale-row .cat{font-weight:700;font-size:14.5px;}
+  .sale-row .meta{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .sale-row .commission{font-family:'IBM Plex Mono';font-weight:600;color:var(--accent);font-size:15px;white-space:nowrap;}
+  .thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
+
+  .sale-actions{display:flex;gap:8px;margin-top:10px;}
+  .sale-actions button{flex:1;}
+
+  .empty-state{text-align:center;padding:50px 20px;color:var(--ink-soft);}
+  .empty-state .ic{font-size:36px;margin-bottom:10px;}
+  .empty-state .t{font-weight:700;color:var(--ink);margin-bottom:4px;}
+  .empty-state .d{font-size:13px;}
+
+  .cat-mgmt-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;}
+  .cat-mgmt-row .n{font-weight:700;font-size:14.5px;}
+  .cat-mgmt-row .p{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+
+  .file-drop{
+    border:1.5px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;
+    background:#FCFEFD;transition:border-color .15s;
+  }
+  .file-drop:hover{border-color:var(--primary);}
+  .file-drop .ic{font-size:22px;}
+  .file-drop .t{font-size:13px;font-weight:700;margin-top:4px;}
+  .preview-img{max-width:100%;max-height:150px;border-radius:10px;margin-top:10px;}
+
+  ::placeholder{color:#A9BDB8;}
+  @media (max-width:380px){.card{padding:24px 18px;}}
+
+  /* ---------- admin dashboard ---------- */
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+  .stat-grid.one{grid-template-columns:1fr;}
+  .stat-card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:13px 10px;text-align:center;}
+  .stat-card .v{font-family:'Cairo';font-weight:800;font-size:19px;color:var(--primary-dark);}
+  .stat-card .l{font-size:11px;color:var(--ink-soft);margin-top:3px;font-weight:600;}
+  .admin-section{margin-bottom:30px;}
+  .admin-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:13px;background:#fff;}
+  table.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;}
+  table.data-table th{background:var(--primary-tint);color:var(--primary-dark);font-family:'Cairo';font-weight:700;padding:10px 12px;text-align:right;position:sticky;top:0;}
+  table.data-table td{padding:9px 12px;border-top:1px solid var(--border);color:var(--ink);}
+  table.data-table td.num,table.data-table th.num{font-family:'IBM Plex Mono';}
+  table.data-table tr:hover td{background:#FAFDFB;}
+  .export-btn{display:inline-flex;align-items:center;gap:6px;background:#1D6F3E;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;}
+  .export-btn:hover{background:#175A32;}
+
+  /* ---------- review queue & leaderboard ---------- */
+  .review-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .review-top{display:flex;gap:12px;align-items:flex-start;}
+  .review-thumb{width:58px;height:58px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex:none;cursor:pointer;transition:transform .12s;}
+  .review-thumb:hover{transform:scale(1.05);}
+  .review-info .n{font-weight:700;font-size:14.5px;}
+  .review-info .m{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.6;}
+  .review-actions{display:flex;gap:8px;margin-top:12px;}
+  .review-actions button{flex:1;}
+  .btn.approve{background:#1D7A4C;color:#fff;}
+  .btn.approve:hover{background:#166139;}
+  .dup-warning{color:var(--danger);font-size:11.5px;font-weight:700;margin-top:8px;}
+
+  .lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:13px;margin-bottom:9px;}
+  .lb-row.me{border-color:var(--accent);background:var(--accent-tint);}
+  .lb-rank{width:30px;height:30px;border-radius:50%;background:var(--primary-tint);color:var(--primary-dark);
+    display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:800;font-size:13px;flex:none;}
+  .lb-rank.gold{background:#F5D48A;color:#7A5A16;}
+  .lb-rank.silver{background:#DCE3E6;color:#4C5A5F;}
+  .lb-rank.bronze{background:#E9C4A0;color:#6B4321;}
+  .lb-name{flex:1;}
+  .lb-name .n{font-weight:700;font-size:14px;}
+  .lb-name .c{font-size:11.5px;color:var(--ink-soft);}
+  .lb-amt{font-family:'IBM Plex Mono';font-weight:700;color:var(--accent);font-size:14.5px;}
+
+  /* ---------- image viewer modal ---------- */
+  .img-modal-overlay{
+    position:fixed;inset:0;background:rgba(10,26,22,.9);z-index:1000;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:24px;
+  }
+  .img-modal-overlay.hidden{display:none;}
+  .img-modal-inner{display:flex;flex-direction:column;align-items:center;gap:16px;max-width:100%;}
+  .img-modal-img{max-width:92vw;max-height:72vh;border-radius:12px;box-shadow:0 24px 60px -12px rgba(0,0,0,.6);background:#fff;}
+  .img-modal-actions{display:flex;gap:10px;}
+  .img-modal-actions a,.img-modal-actions button{padding:11px 20px;border-radius:11px;font-weight:700;font-size:13.5px;font-family:'Tajawal';border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .img-modal-download{background:var(--accent);color:#3A2C08;}
+  .img-modal-download:hover{background:#B78A2E;}
+  .img-modal-close{background:rgba(255,255,255,.16);color:#fff;}
+  .img-modal-close:hover{background:rgba(255,255,255,.28);}
+  .view-invoice-btn{background:var(--primary-tint);color:var(--primary-dark);padding:6px 11px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;}
+  .view-invoice-btn:hover{background:#D3E9E0;}
+
+  /* ---------- charts ---------- */
+  .chart-block{margin-bottom:22px;}
+  .chart-title{font-weight:700;font-size:13.5px;margin-bottom:10px;color:var(--ink);}
+  .chart-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .chart-label{width:120px;flex:none;font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chart-bar-track{flex:1;background:var(--primary-tint);border-radius:8px;height:16px;overflow:hidden;}
+  .chart-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:8px;}
+  .chart-val{width:72px;flex:none;text-align:left;font-size:12px;font-weight:700;color:var(--ink);}
+
+  /* ---------- sub-admin management ---------- */
+  .subadmin-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;}
+  .subadmin-row .n{font-weight:700;font-size:14px;}
+  .subadmin-row .p{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+</style>
+</head>
+<body>
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="app"></div>
+<div id="connBanner" style="display:none;position:fixed;top:0;left:0;right:0;background:#7A2A21;color:#fff;text-align:center;font-size:12.5px;padding:7px 10px;z-index:1500;font-weight:700;"></div>
+
+<div id="imgModal" class="img-modal-overlay hidden" onclick="closeImageModal()">
+  <div class="img-modal-inner" onclick="event.stopPropagation()">
+    <img id="imgModalImg" class="img-modal-img" src="" alt="صورة الفاتورة">
+    <div class="img-modal-actions">
+      <a id="imgModalDownload" class="img-modal-download" href="#" download="فاتورة.jpg">⬇ تحميل الصورة</a>
+      <button class="img-modal-close" onclick="closeImageModal()">✕ إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* =========================================================
+   نظام عمولات مستودع مسروجي — واجهة متصلة بالباك-إند الحقيقي
+
+   - النظام مقسم لقسمين: أدوية (MEDICINE) وكوزمتك (COSMETICS).
+   - الصيدلي حساب واحد يقدر يبيع بالقسمين، ويختار القسم بعد الدخول
+     (شاشة deptChoice) قبل ما يوصل لصفحة إضافة عملية بيع، ويقدر
+     يبدّل القسم بأي وقت من زر بأعلى الشاشة.
+   - نوع أدمن واحد بصلاحيات كاملة: بعد الدخول بيختار "لوحة الأدوية" أو
+     "لوحة الكوزمتك"، وبيقدر يبدّل بينهم بأي وقت. صفحة "الدفعات الشهرية"
+     مشتركة للقسمين (تحويل واحد لكل صيدلي).
+   - دخول الأدمن (أي نوع) بيصير باسم مستخدم (username) مش رقم هاتف،
+     فبنميّزه تلقائيًا: أي إدخال مش 10 أرقام بالضبط يعتبر محاولة
+     دخول أدمن.
+   - ميزة "نسيت كلمة المرور" بالنموذج الأصلي كانت بترجع كلمة المرور
+     مباشرة (تجريبي فقط) — الباك-إند الحقيقي ما بيدعم هيك شي (ولا يجب
+     إنه يدعمه أصلاً لأسباب أمنية)، فحولناها لشاشة إرشادية فقط.
+   ========================================================= */
+
+/* ---------------- إعدادات ---------------- */
+const API_BASE = (window.MOSTODAA_API_BASE || 'https://mostodaa-backend.onrender.com/api');
+
+const JORDAN_CITIES = ['عمّان','إربد','الزرقاء','البلقاء (السلط)','المفرق','الكرك','معان','الطفيلة','مأدبا','جرش','عجلون','العقبة'];
+const DEPARTMENTS = [ { value:'MEDICINE', label:'الأدوية', icon:'💊' }, { value:'COSMETICS', label:'الكوزمتك', icon:'💄' } ];
+function deptLabel(dep){ const d = DEPARTMENTS.find(x=>x.value===dep); return d ? d.label : dep; }
+
+/* ---------------- الحالة العامة ---------------- */
+let token = localStorage.getItem('mm_token') || null;
+let currentUser = null; // من /users/me -> { type:'pharmacist'|'admin', ... }
+let CATEGORIES = [];    // أصناف القسم الحالي
+
+let currentScreen = 'landing';
+let activeTab = 'add';
+
+// القسم المختار حاليًا: صيدلي (بعد شاشة الاختيار) / أدمن (اللوحة اللي دخلها: MEDICINE أو COSMETICS)
+let selectedDepartment = null;
+let adminDeptFilter = '';
+let adminPanelChosen = false; // الأدمن لازم يختار اللوحة (أدوية/كوزمتك) بعد الدخول
+
+// نوع عملية الكوزمتك المختار حاليًا (صيدلي فقط، بعد اختيار قسم الكوزمتك):
+// 'NORMAL' = بيع عادي / 'ASIL' = تعويض الأصيل / 'ZAROZA' = تعويض زاروزا
+// null = لسا ما اختار (بتظهر شاشة الاختيار). قسم الأدوية دايمًا NORMAL مباشرة.
+let saleMode = null;
+const SALE_MODES = [
+  { value:'NORMAL', label:'تسجيل عملية بيع', icon:'🧾' },
+  { value:'ASIL',   label:'تسجيل تعويض الأصيل', icon:'🔄' },
+  { value:'ZAROZA', label:'تسجيل تعويض زاروزا', icon:'🔄' },
+];
+function saleModeLabel(m){ const x = SALE_MODES.find(s=>s.value===m); return x ? x.label : 'بيع عادي'; }
+
+// أصناف تعويض الأصيل/زاروزا (مع السعر) — تُحمَّل حسب النوع والقسم عند الحاجة
+let compensationItemsCache = { ASIL:null, ZAROZA:null };
+
+// تسجيل / دخول
+let pendingReg = {};
+let otpCode = null;       // يظهر فقط بوضع التطوير المحلي (OTP_DEV_MODE)، بالإنتاج ما بيرجع من السيرفر أبدًا
+let otpVerified = false;
+let verificationToken = null;
+let regPhoneExists = false; // الرقم مسجّل مسبقًا → نعرض زر استعادة كلمة المرور
+let otpSent = false;        // تم إرسال رمز التحقق (نعرض حقل إدخاله)
+// استعادة كلمة المرور: step 1=رقم الهاتف، 2=رمز التحقق، 3=كلمة المرور الجديدة
+let forgot = { step:1, phone:'', resetToken:null, devCode:null };
+// تحقق بخطوتين للأدمن
+let admin2fa = { challengeToken:null, maskedPhone:'', devCode:null };
+// تغيير معلومات الاستلام (الصيدلي): مسودة + حالة رمز التحقق
+let payoutDraft = null;      // { type, value }
+let payoutOtpSent = false;
+let payoutOtpDev = null;
+// كود إحالة جاء من رابط دعوة (?ref=CODE) — يتعبى تلقائيًا بخطوة التسجيل لو موجود
+let incomingReferralCode = null;
+
+// إضافة/تعديل عملية بيع
+let addFlow = { categoryId:null, mainItemId:null, freeItemId:null, qty:null, date:null, invoiceNumber:'', submitted:false, dateEditing:false };
+let pendingInvoiceFile = null;
+let pendingInvoicePreview = null;
+let lastSubmittedSale = null;
+
+// سجل المبيعات (بعد الإرسال ما في تعديل ولا حذف — الأدمن بيقبل أو بيرفض، ولو غلطت بترسل عملية جديدة)
+let mySalesCache = null;
+
+// فلتر تبويب "السجل": الصيدلي لازم يحدد نوع الفواتير قبل ما تظهر له
+// null = لسا ما اختار (بتظهر شاشة الاختيار) / 'NORMAL' / 'ASIL' / 'ZAROZA'
+let historyFilterType = null;
+// إظهار/إخفاء ملخص القطع الفري المستحقة (لصفحات التعويض فقط)
+let showFreeItemsSummary = false;
+const HISTORY_FILTERS = [
+  { value:'NORMAL', label:'المبيعات العادية', icon:'🧾' },
+  { value:'ASIL',   label:'فواتير تعويض الأصيل', icon:'🔄' },
+  { value:'ZAROZA', label:'فواتير تعويض زاروزا', icon:'🔄' },
+];
+// عنوان الفلتر يتغيّر حسب القسم الحالي (فواتير الدواء / فواتير الكوزمتك بدل "المبيعات العادية")
+function historyFilterLabel(v){
+  if(v==='NORMAL') return selectedDepartment==='MEDICINE' ? 'فواتير الدواء' : 'فواتير الكوزمتك';
+  const x = HISTORY_FILTERS.find(f=>f.value===v);
+  return x ? x.label : '';
+}
+// شاشة الاختيار تظهر فقط بالكوزمتك (3 خيارات) — الأدوية عندها خيار واحد فبيتحدد تلقائيًا
+function historyFiltersForCurrentDept(){
+  if(selectedDepartment==='MEDICINE'){
+    return [{ value:'NORMAL', label:'فواتير الدواء', icon:'🧾' }];
+  }
+  return [
+    { value:'NORMAL', label:'فواتير الكوزمتك', icon:'🧾' },
+    { value:'ASIL',   label:'فواتير تعويض الأصيل', icon:'🔄' },
+    { value:'ZAROZA', label:'فواتير تعويض زاروزا', icon:'🔄' },
+  ];
+}
+
+// الأدمن
+let adminSalesCache = null; // كل عمليات القسم (كل الحالات)
+let rejectingId = null;
+let adminPharmacistFilter = null; // مراجعة فواتير صيدلي محدد (قادم من صفحة الدفعات)
+
+let pharmacistsCache = null; // GET /users/pharmacists
+
+// تبويب "إدارة الأصناف" عند الأدمن: تبويب فرعي حالي (فقط لقسم الكوزمتك)
+// 'NORMAL' = الأصناف العادية / 'ASIL' / 'ZAROZA' = أصناف التعويض
+let catMgmtSubTab = 'NORMAL';
+// نموذج إضافة صنف جديد: هل مفعّل خيار "رفع العمولة" (عمولة متدرّجة)؟
+let newCatTierEnabled = false;
+// تعديل صنف موجود: أي صنف حاليًا بوضع التعديل (id) وهل مفعّل عنده خيار رفع العمولة
+let editingCategoryId = null;
+let editCatTierEnabled = {};
+
+// تبويب الإحالة
+let referralSummaryCache = null;
+
+let leaderboardCache = null;
+
+let adminFilter = { city:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
+let adminFilterActive = false;
+let reportsRows = [];
+
+// تقارير تعويض الأصيل/زاروزا (أدمن الكوزمتك فقط) — فلتر مستقل لكل نوع
+function defaultCompFilter(){
+  return { city:'', pharmacistId:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
+}
+let compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
+let compReportsRows = { ASIL: null, ZAROZA: null };
+let compReportsActive = { ASIL:false, ZAROZA:false };
+
+// الأدمن داخل لوحة الكوزمتك — تظهر له تبويبات تعويض الأصيل/زاروزا
+function isCosmeticsAdminContext(){
+  if(!currentUser || currentUser.type!=='admin') return false;
+  return adminDeptFilter === 'COSMETICS';
+}
+
+let statsFilter = { city:'' };
+let statsFilterActive = false;
+
+// الدفعات الشهرية (أدمن)
+let payoutsData = null;        // رد GET /payouts
+let payoutsMonth = '';         // YYYY-MM ('' = الافتراضي: الشهر الماضي)
+let confirmingPayoutId = null; // الصيدلي اللي بنأكد تحويله حاليًا
+let accountMsg = null;         // رسالة تبويب الحساب (تغيير كلمة السر)
+
+
+/* ---------------- API helper ---------------- */
+async function apiRequest(path, { method='GET', json=null, form=null, auth=true } = {}){
+  const headers = {};
+  if(auth && token) headers['Authorization'] = 'Bearer ' + token;
+  let body;
+  if(form){ body = form; }
+  else if(json){ headers['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
+
+  let res;
+  try{
+    res = await fetch(API_BASE + path, { method, headers, body });
+  }catch(e){
+    showConnBanner(true);
+    throw new Error('تعذر الاتصال بالسيرفر. تأكد من تشغيل الباك-إند وصحة عنوان API_BASE.');
+  }
+  showConnBanner(false);
+
+  let data = {};
+  try{ data = await res.json(); }catch(e){ /* رد بدون JSON */ }
+
+  if(!res.ok){
+    let msg = data && data.message ? data.message : ('حدث خطأ (كود ' + res.status + ')');
+    // إذا فيه تفاصيل أخطاء تحقق (validation) من الزود، نوضحها بدل رسالة عامة غامضة
+    if(data && Array.isArray(data.details) && data.details.length){
+      msg = data.details.map(d => d.message).join(' — ');
+    }
+    const err = new Error(msg);
+    err.details = data && data.details;
+    err.code = data && data.code;
+    err.status = res.status;
+    // 401 على طلب فيه توكن = الجلسة انتهت/انلغت. (أما فشل تسجيل الدخول نفسه فبيعرض رسالته العادية)
+    if(res.status === 401 && auth && token){ handleUnauthorized(); }
+    throw err;
+  }
+  return data; // { success, message, data }
+}
+
+function showConnBanner(show){
+  const el = document.getElementById('connBanner');
+  if(!el) return;
+  if(show){
+    el.textContent = 'تعذر الاتصال بسيرفر الباك-إند (' + API_BASE + ') — تأكد إنه شغّال';
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function handleUnauthorized(){
+  token = null; currentUser = null;
+  localStorage.removeItem('mm_token');
+  currentScreen = 'login';
+  toast('انتهت صلاحية الجلسة، الرجاء تسجيل الدخول مجددًا', 'danger');
+  render();
+}
+
+/* ---------------- utils ---------------- */
+function toast(msg, kind){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind==='danger' ? ' danger' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 3200);
+}
+// ينظّف أي نص جاي من المستخدم/السيرفر قبل حقنه جوا innerHTML، يمنع Stored XSS
+// (لازم يُستخدم على كل قيمة نصية حرة زي الاسم/الصيدلية/المدينة/سبب الرفض...)
+function esc(value){
+  if(value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// الدينار الأردني = 3 خانات عشرية (فلس) — نفس دقة قاعدة البيانات، حتى ما يختلف اللي بالشاشة عن اللي بيتحوّل
+function fmtMoney(n){ return Number(n||0).toFixed(3); }
+function fmtMonth(key){
+  if(!key) return '';
+  const [y,m] = key.split('-').map(Number);
+  const names = ['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
+  return names[m-1] + ' ' + y;
+}
+function currentMonthKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function shiftMonthKey(key, delta){
+  const [y,m] = key.split('-').map(Number);
+  const idx = y*12 + (m-1) + delta;
+  return Math.floor(idx/12)+'-'+String((idx%12)+1).padStart(2,'0');
+}
+function fmtDate(d){
+  if(!d) return '';
+  try{
+    const dt = d.length===10 ? new Date(d+'T00:00:00') : new Date(d);
+    return dt.toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
+  }catch(e){ return d; }
+}
+function toDateInputValue(d){
+  if(!d) return '';
+  return String(d).slice(0,10);
+}
+function statusBadgeHtml(s){
+  return s.status==='APPROVED' ? `<span class="badge ok">مقبولة</span>`
+    : s.status==='REJECTED' ? `<span class="badge rejected">مرفوضة</span>`
+    : `<span class="badge pending">قيد المراجعة</span>`;
+}
+function payoutTypeLabel(t){ return t==='PHONE' ? 'رقم هاتف' : t==='ALIAS' ? 'اسم مستعار' : '—'; }
+
+function resizeImageToBlob(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1000;
+        const scale = Math.min(1, maxW/img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width*scale));
+        canvas.height = Math.max(1, Math.round(img.height*scale));
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        canvas.toBlob(blob=>{
+          if(!blob){ reject(new Error('تعذرت معالجة الصورة')); return; }
+          resolve({ blob, dataUrl: canvas.toDataURL('image/jpeg', 0.8) });
+        }, 'image/jpeg', 0.8);
+      };
+      img.onerror = () => reject(new Error('تعذرت قراءة الصورة'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('تعذرت قراءة الصورة'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function openImageModal(src, filename){
+  document.getElementById('imgModalImg').src = src;
+  const dl = document.getElementById('imgModalDownload');
+  dl.href = src;
+  dl.download = filename || 'فاتورة.jpg';
+  document.getElementById('imgModal').classList.remove('hidden');
+}
+function closeImageModal(){
+  document.getElementById('imgModal').classList.add('hidden');
+  document.getElementById('imgModalImg').src = '';
+}
+
+/* ---------------- render root ---------------- */
+function render(){
+  const app = document.getElementById('app');
+  if(!currentUser){
+    app.innerHTML = screens[currentScreen] ? screens[currentScreen]() : screenLanding();
+  } else if(currentUser.type==='admin' && !adminPanelChosen){
+    app.innerHTML = screenAdminPanelChoice();
+  } else if(currentUser.type==='pharmacist' && !selectedDepartment){
+    app.innerHTML = screenDeptChoice();
+  } else if(currentUser.type==='pharmacist' && selectedDepartment==='COSMETICS' && !saleMode){
+    app.innerHTML = screenCosmeticsChoice();
+  } else {
+    app.innerHTML = screenAppShell();
+  }
+}
+function goto(screen){ currentScreen = screen; render(); }
+
+/* ============================================================
+   شاشات ما قبل تسجيل الدخول
+   ============================================================ */
+function topLogoBar(){
+  return `
+  <div style="text-align:center;padding:28px 18px 4px;">
+    <div style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:16px;
+      background:linear-gradient(155deg,var(--primary),var(--primary-dark));color:var(--accent-tint);
+      font-family:'Cairo',sans-serif;font-weight:800;font-size:26px;box-shadow:0 10px 24px -8px rgba(10,66,58,.5);margin-bottom:8px;">م</div>
+    <div style="font-family:'Cairo',sans-serif;font-weight:800;font-size:18px;color:var(--primary-dark);">مستودع مسروجي</div>
+  </div>`;
+}
+
+function screenLanding(){
+  return `
+  <div class="center-wrap">
+    <div class="card">
+      <div class="brand">
+        <div class="brand-mark">م</div>
+        <div class="brand-text">
+          <div class="t1">مستودع مسروجي</div>
+          <div class="t2">نظام عمولات المبيعات</div>
+        </div>
+      </div>
+      <p style="color:var(--ink-soft);font-size:14px;line-height:1.7;margin-bottom:22px;">
+        سجّل مبيعاتك من الصيدلية بسهولة، واحصل على عمولتك فورًا لكل عملية بيع.
+      </p>
+      <button class="btn" onclick="goto('login')">تسجيل الدخول</button>
+      <div class="divider">أو</div>
+      <button class="btn ghost" onclick="goto('reg1')">إنشاء حساب جديد</button>
+    </div>
+  </div>`;
+}
+
+function screenDeptChoice(){
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <h2 style="margin:0 0 4px;">أهلًا ${esc(currentUser.fullName)} 👋</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;">اختر القسم اللي بدك تسجل فيه عملية بيع</p>
+      ${DEPARTMENTS.map(d=>`
+        <button class="btn ${d.value==='MEDICINE'?'':'accent'}" style="margin-bottom:12px;font-size:16px;padding:16px;" onclick="chooseDepartment('${d.value}')">
+          ${d.icon} تسجيل عملية بيع ${d.label}
+        </button>`).join('')}
+      <div style="text-align:center;margin-top:10px;">
+        <button class="link-btn" onclick="doLogout()">تسجيل الخروج</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// الأدمن: أول شاشة بعد الدخول — اختيار لوحة التحكم (أدوية / كوزمتك)
+function screenAdminPanelChoice(){
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <h2 style="margin:0 0 4px;">أهلًا ${esc(currentUser.fullName)} 👋</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;">اختر لوحة التحكم اللي بدك تدخل عليها</p>
+      ${DEPARTMENTS.map(d=>`
+        <button class="btn ${d.value==='MEDICINE'?'':'accent'}" style="margin-bottom:12px;font-size:16px;padding:16px;" onclick="chooseAdminPanel('${d.value}')">
+          ${d.icon} الدخول إلى لوحة تحكم ${d.label}
+        </button>`).join('')}
+      <div style="text-align:center;margin-top:10px;">
+        <button class="link-btn" onclick="doLogout()">تسجيل الخروج</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function chooseAdminPanel(dep){
+  adminDeptFilter = dep;
+  adminPanelChosen = true;
+  adminSalesCache = null; leaderboardCache = null; CATEGORIES = [];
+  compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
+  adminFilterActive = false; reportsRows = [];
+  compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
+  compReportsRows = { ASIL: null, ZAROZA: null }; compReportsActive = { ASIL:false, ZAROZA:false };
+  activeTab = 'admin';
+  render();
+  await loadTabData(activeTab);
+}
+
+function switchAdminPanel(){
+  adminPanelChosen = false;
+  render();
+}
+
+async function chooseDepartment(dep){
+  selectedDepartment = dep;
+  activeTab = 'add';
+  resetAddFlow();
+  CATEGORIES = [];
+  compensationItemsCache = { ASIL:null, ZAROZA:null };
+  if(dep === 'COSMETICS'){
+    // قسم الكوزمتك فيه 3 أنواع عمليات، لازم يختار الصيدلي النوع أول (شاشة saleMode تظهر تلقائيًا)
+    saleMode = null;
+    render();
+  } else {
+    saleMode = 'NORMAL';
+    render();
+    await loadTabData(activeTab);
+  }
+}
+
+function switchDepartment(){
+  selectedDepartment = null;
+  saleMode = null;
+  CATEGORIES = []; mySalesCache = null; leaderboardCache = null;
+  historyFilterType = null; showFreeItemsSummary = false;
+  compensationItemsCache = { ASIL:null, ZAROZA:null };
+  render();
+}
+
+function screenCosmeticsChoice(){
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <div class="back-row"><button onclick="switchDepartment()">‹ رجوع</button></div>
+      <h2 style="margin:0 0 4px;">قسم الكوزمتك 💄</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;">اختر نوع العملية اللي بدك تسجلها</p>
+      ${SALE_MODES.map(m=>`
+        <button class="btn ${m.value==='NORMAL'?'':'accent'}" style="margin-bottom:12px;font-size:15.5px;padding:16px;" onclick="chooseSaleMode('${m.value}')">
+          ${m.icon} ${m.label}
+        </button>`).join('')}
+      <div style="text-align:center;margin-top:10px;">
+        <button class="link-btn" onclick="doLogout()">تسجيل الخروج</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function chooseSaleMode(mode){
+  saleMode = mode;
+  activeTab = 'add';
+  resetAddFlow();
+  render();
+  await loadTabData(activeTab);
+}
+
+function switchSaleMode(){
+  saleMode = null;
+  activeTab = 'add';
+  resetAddFlow();
+  render();
+}
+
+function resetAddFlow(){
+  addFlow = { categoryId:null, mainItemId:null, freeItemId:null, qty:null, date:null, invoiceNumber:'', submitted:false, dateEditing:false };
+  pendingInvoiceFile = null; pendingInvoicePreview = null; lastSubmittedSale = null;
+}
+
+function screenLogin(){
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <div class="back-row"><button onclick="goto('landing')">‹ رجوع</button></div>
+      <h2 style="margin:0 0 4px;">تسجيل الدخول</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 20px;">أدخل رقم هاتفك وكلمة المرور (الإدارة: اسم المستخدم)</p>
+
+      <div class="field">
+        <label>رقم الهاتف</label>
+        <input type="text" id="loginPhone" placeholder="07XXXXXXXX" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="loginPass" placeholder="••••••••">
+      </div>
+      <button class="btn" id="loginBtn" onclick="doLogin()">دخول</button>
+      <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+        <button class="link-btn" onclick="resetForgot();goto('forgot')">نسيت كلمة المرور؟</button>
+        <button class="link-btn" onclick="goto('reg1')">ليس لديك حساب؟ إنشاء حساب جديد</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenForgot(){
+  const f = forgot;
+  const dev = f.devCode ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(f.devCode)}</span></div>` : '';
+  let body = '';
+  if(f.step === 1){
+    body = `
+      <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:0 0 16px;">أدخل رقم هاتفك المسجّل وسنرسل لك رمز تحقق على هاتفك.</p>
+      <div class="field">
+        <label>رقم الهاتف</label>
+        <input type="tel" id="forgotPhone" maxlength="10" inputmode="numeric" placeholder="07XXXXXXXX" value="${esc(f.phone)}">
+      </div>
+      <button class="btn" id="forgotSendBtn" onclick="forgotSendOtp()">إرسال رمز التحقق</button>`;
+  } else if(f.step === 2){
+    body = `
+      <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:0 0 16px;">أرسلنا رمزًا مكوّنًا من 6 أرقام إلى <b class="num">${esc(f.phone)}</b>.</p>
+      ${dev}
+      <div class="field">
+        <label>رمز التحقق</label>
+        <input type="text" id="forgotCode" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
+      </div>
+      <button class="btn" id="forgotVerifyBtn" onclick="forgotVerifyOtp()">تأكيد الرمز</button>
+      <div style="text-align:center;margin-top:12px;"><button class="link-btn" onclick="forgotSendOtp(true)">إعادة إرسال الرمز</button></div>`;
+  } else {
+    body = `
+      <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:0 0 16px;">تم التحقق ✓ — أدخل كلمة المرور الجديدة.</p>
+      <div class="field">
+        <label>كلمة المرور الجديدة</label>
+        <input type="password" id="forgotNewPass" placeholder="8 أحرف على الأقل، فيها حرف ورقم">
+      </div>
+      <div class="field">
+        <label>تأكيد كلمة المرور</label>
+        <input type="password" id="forgotNewPass2" placeholder="أعد كتابة كلمة المرور">
+      </div>
+      <button class="btn" id="forgotResetBtn" onclick="forgotReset()">حفظ كلمة المرور</button>`;
+  }
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <div class="back-row"><button onclick="resetForgot();goto('login')">‹ رجوع</button></div>
+      <h2 style="margin:0 0 4px;">استعادة كلمة المرور</h2>
+      <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 16px;">الخطوة ${f.step} من 3</p>
+      ${body}
+    </div>
+  </div>`;
+}
+
+function resetForgot(){ forgot = { step:1, phone:'', resetToken:null, devCode:null }; }
+
+function startForgotFromReg(){
+  const phone = pendingReg.phone || '';
+  resetReg();
+  forgot = { step:1, phone, resetToken:null, devCode:null };
+  goto('forgot');
+}
+
+async function forgotSendOtp(isResend){
+  const phone = isResend ? forgot.phone : document.getElementById('forgotPhone').value.trim();
+  if(!/^\d{10}$/.test(phone)){ toast('رقم الهاتف يجب أن يتكون من 10 أرقام', 'danger'); return; }
+  const btn = document.getElementById('forgotSendBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
+  try{
+    const res = await apiRequest('/auth/pharmacist/forgot-password/send-otp', { method:'POST', auth:false, json:{ phoneNumber: phone } });
+    forgot.phone = phone;
+    forgot.devCode = res.data && res.data.devOtpCode ? res.data.devOtpCode : null;
+    forgot.step = 2;
+    toast('تم إرسال رمز التحقق إلى ' + phone);
+    render();
+  }catch(e){
+    if(e.code === 'ACCOUNT_NOT_FOUND'){
+      toast(e.message, 'danger');
+    } else {
+      toast(e.message, 'danger');
+    }
+    if(btn){ btn.disabled = false; btn.textContent = 'إرسال رمز التحقق'; }
+  }
+}
+
+async function forgotVerifyOtp(){
+  const code = document.getElementById('forgotCode').value.trim();
+  if(!/^\d{6}$/.test(code)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
+  const btn = document.getElementById('forgotVerifyBtn');
+  if(btn) btn.disabled = true;
+  try{
+    const res = await apiRequest('/auth/pharmacist/forgot-password/verify-otp', { method:'POST', auth:false, json:{ phoneNumber: forgot.phone, code } });
+    forgot.resetToken = res.data.resetToken;
+    forgot.step = 3;
+    render();
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn) btn.disabled = false;
+  }
+}
+
+async function forgotReset(){
+  const p1 = document.getElementById('forgotNewPass').value;
+  const p2 = document.getElementById('forgotNewPass2').value;
+  if(p1.length < 8 || !/[A-Za-z\u0621-\u064A]/.test(p1) || !/[0-9]/.test(p1)){ toast('كلمة المرور يجب أن تكون 8 أحرف على الأقل وفيها حرف ورقم', 'danger'); return; }
+  if(p1 !== p2){ toast('كلمتا المرور غير متطابقتين', 'danger'); return; }
+  const btn = document.getElementById('forgotResetBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
+  try{
+    await apiRequest('/auth/pharmacist/forgot-password/reset', { method:'POST', auth:false, json:{ resetToken: forgot.resetToken, newPassword: p1 } });
+    toast('تم تغيير كلمة المرور بنجاح ✓ سجّل الدخول الآن');
+    resetForgot();
+    goto('login');
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; btn.textContent = 'حفظ كلمة المرور'; }
+  }
+}
+
+function screenReg1(){
+  const step1Done = pendingReg.name && pendingReg.phone && otpVerified;
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <div class="back-row"><button onclick="resetReg();goto('landing')">‹ رجوع</button></div>
+      <h2 style="margin:0 0 4px;">حساب جديد</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 20px;">الخطوة 1 من 2 — بيانات التواصل</p>
+
+      <div class="field">
+        <label>الاسم الكامل</label>
+        <input type="text" id="regName" placeholder="مثال: أحمد الشريف" value="${esc(pendingReg.name||'')}">
+      </div>
+
+      <div class="field">
+        <label>رقم الهاتف</label>
+        <div class="row2">
+          <input type="tel" id="regPhone" maxlength="10" placeholder="10 أرقام" inputmode="numeric" value="${pendingReg.phone||''}" ${otpVerified?'disabled':''}>
+          <button class="btn accent sm" id="sendOtpBtn" style="flex:0 0 auto;" onclick="sendOtp()" ${otpVerified?'disabled':''}>إرسال رمز التحقق</button>
+        </div>
+        <div class="hint">يجب أن يتكون رقم الهاتف من 10 أرقام بالضبط</div>
+      </div>
+
+      ${regPhoneExists ? `
+      <div class="otp-banner" style="display:block;">
+        <div style="margin-bottom:10px;line-height:1.7;">حسابك مسجّل مسبقًا بهذا الرقم. سجّل الدخول، أو اضغط على استعادة كلمة المرور إذا نسيتها.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn sm" style="flex:1;" onclick="resetReg();goto('login')">تسجيل الدخول</button>
+          <button class="btn accent sm" style="flex:1;" onclick="startForgotFromReg()">استعادة كلمة المرور</button>
+        </div>
+      </div>` : ''}
+
+      ${otpSent && !otpVerified ? `
+      ${otpCode ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(otpCode)}</span></div>` : ''}
+      <div class="field">
+        <label>أدخل رمز التحقق (6 أرقام)</label>
+        <div class="row2">
+          <input type="text" id="otpInput" maxlength="6" placeholder="XXXXXX" inputmode="numeric">
+          <button class="btn sm" id="verifyOtpBtn" style="flex:0 0 auto;" onclick="verifyOtp()">تأكيد</button>
+        </div>
+      </div>` : ''}
+
+      ${otpVerified ? `<div style="margin-bottom:14px;"><span class="badge ok">✓ تم تأكيد رقم الهاتف</span></div>` : ''}
+
+      <button class="btn" ${step1Done ? '' : 'disabled'} onclick="goStep2()">التالي</button>
+    </div>
+  </div>`;
+}
+
+function resetReg(){ pendingReg = {}; otpCode=null; otpVerified=false; verificationToken=null; regPhoneExists=false; otpSent=false; }
+
+async function sendOtp(){
+  const name = document.getElementById('regName').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  if(!name){ toast('الرجاء إدخال الاسم', 'danger'); return; }
+  if(!/^\d{10}$/.test(phone)){ toast('رقم الهاتف يجب أن يتكون من 10 أرقام', 'danger'); return; }
+
+  const btn = document.getElementById('sendOtpBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
+  try{
+    const res = await apiRequest('/auth/pharmacist/send-otp', { method:'POST', auth:false, json:{ fullName:name, phoneNumber:phone } });
+    pendingReg.name = name;
+    pendingReg.phone = phone;
+    otpCode = res.data && res.data.devOtpCode ? res.data.devOtpCode : null;
+    otpVerified = false;
+    regPhoneExists = false;
+    otpSent = true;
+    toast('تم إرسال رمز التحقق إلى ' + phone);
+    render();
+  }catch(e){
+    if(e.code === 'PHONE_EXISTS'){
+      // الرقم مسجّل: نعرض رسالة + زر استعادة كلمة المرور بدل رسالة خطأ عادية
+      pendingReg.name = name; pendingReg.phone = phone;
+      regPhoneExists = true; otpSent = false; otpCode = null;
+      render();
+      return;
+    }
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; btn.textContent = 'إرسال رمز التحقق'; }
+  }
+}
+
+async function verifyOtp(){
+  const val = document.getElementById('otpInput').value.trim();
+  if(!/^\d{6}$/.test(val)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
+  const btn = document.getElementById('verifyOtpBtn');
+  if(btn) btn.disabled = true;
+  try{
+    const res = await apiRequest('/auth/pharmacist/verify-otp', { method:'POST', auth:false, json:{ phoneNumber: pendingReg.phone, code: val } });
+    verificationToken = res.data.verificationToken;
+    otpVerified = true;
+    toast('تم تأكيد رقم الهاتف ✓');
+    render();
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn) btn.disabled = false;
+  }
+}
+
+function goStep2(){
+  if(!otpVerified){ toast('الرجاء تأكيد رقم الهاتف أولاً', 'danger'); return; }
+  goto('reg2');
+}
+
+function screenReg2(){
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <div class="back-row"><button onclick="goto('reg1')">‹ رجوع</button></div>
+      <h2 style="margin:0 0 4px;">حساب جديد</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 20px;">الخطوة 2 من 2 — بيانات الصيدلية</p>
+
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="regPass" placeholder="8 أحرف على الأقل، فيها حرف ورقم">
+      </div>
+      <div class="field">
+        <label>اسم الصيدلية</label>
+        <input type="text" id="regPharmacy" placeholder="مثال: صيدلية الشفاء">
+      </div>
+      <div class="field">
+        <label>المدينة</label>
+        <select id="regCity">
+          <option value="" disabled selected>اختر المدينة</option>
+          ${JORDAN_CITIES.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>المنطقة / الحي</label>
+        <input type="text" id="regRegion" placeholder="مثال: الجبيهة">
+      </div>
+      <div class="field">
+        <label>كود الإحالة (اختياري)</label>
+        <input type="text" id="regReferralCode" placeholder="إذا أحالك صيدلي آخر، اكتب كوده هنا" value="${esc(incomingReferralCode || '')}" maxlength="12" style="text-transform:uppercase;">
+      </div>
+
+      <div class="field" style="display:flex;align-items:flex-start;gap:8px;">
+        <input type="checkbox" id="agreeTerms" style="width:auto;margin-top:3px;">
+        <label for="agreeTerms" style="font-size:12px;color:var(--ink-soft);font-weight:500;line-height:1.6;">
+          أوافق على <b style="color:var(--ink);">الشروط والأحكام</b> و<b style="color:var(--ink);">سياسة الخصوصية</b>،
+          وأفهم أن بياناتي (الاسم، الهاتف، صور الفواتير) تُستخدم فقط لغايات إدارة نظام العمولات مع شركة مستودع مسروجي.
+        </label>
+      </div>
+
+      <button class="btn" id="createAccBtn" onclick="createAccount()">إنشاء الحساب</button>
+    </div>
+  </div>`;
+}
+
+async function createAccount(){
+  const password = document.getElementById('regPass').value;
+  const pharmacyName = document.getElementById('regPharmacy').value.trim();
+  const city = document.getElementById('regCity').value;
+  const region = document.getElementById('regRegion').value.trim();
+  const referralCodeInput = document.getElementById('regReferralCode');
+  const referralCode = referralCodeInput ? referralCodeInput.value.trim() : '';
+  const agreed = document.getElementById('agreeTerms').checked;
+  if(password.length < 8 || !/[A-Za-z\u0621-\u064A]/.test(password) || !/[0-9]/.test(password)){ toast('كلمة المرور يجب أن تكون 8 أحرف على الأقل وفيها حرف ورقم', 'danger'); return; }
+  if(!pharmacyName || !city || !region){ toast('الرجاء تعبئة جميع الحقول', 'danger'); return; }
+  if(!agreed){ toast('الرجاء الموافقة على الشروط والأحكام وسياسة الخصوصية', 'danger'); return; }
+  if(!verificationToken){ toast('الرجاء تأكيد رقم الهاتف أولاً', 'danger'); goto('reg1'); return; }
+
+  const btn = document.getElementById('createAccBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإنشاء...'; }
+  try{
+    const res = await apiRequest('/auth/pharmacist/register', { method:'POST', auth:false, json:{
+      verificationToken,
+      fullName: pendingReg.name,
+      phoneNumber: pendingReg.phone,
+      password,
+      pharmacyName, city, region, agreedTerms:true,
+      ...(referralCode ? { referralCode } : {})
+    }});
+    toast('تم إنشاء الحساب بنجاح ✓');
+    await afterAuthSuccess(res.data.token);
+    resetReg();
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; btn.textContent = 'إنشاء الحساب'; }
+  }
+}
+
+function screen2fa(){
+  const dev = admin2fa.devCode ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(admin2fa.devCode)}</span></div>` : '';
+  return `
+  ${topLogoBar()}
+  <div class="center-wrap">
+    <div class="card">
+      <div class="back-row"><button onclick="admin2fa={challengeToken:null,maskedPhone:'',devCode:null};goto('login')">‹ رجوع</button></div>
+      <h2 style="margin:0 0 4px;">التحقق بخطوتين</h2>
+      <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:0 0 16px;">أرسلنا رمز تحقق إلى الهاتف <b class="num">${esc(admin2fa.maskedPhone)}</b>. أدخله لإكمال الدخول.</p>
+      ${dev}
+      <div class="field">
+        <label>رمز التحقق</label>
+        <input type="text" id="admin2faCode" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
+      </div>
+      <button class="btn" id="admin2faBtn" onclick="verifyAdmin2fa()">تأكيد ودخول</button>
+    </div>
+  </div>`;
+}
+
+async function verifyAdmin2fa(){
+  const code = document.getElementById('admin2faCode').value.trim();
+  if(!/^\d{6}$/.test(code)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
+  const btn = document.getElementById('admin2faBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ التحقق...'; }
+  try{
+    const res = await apiRequest('/auth/admin/verify-2fa', { method:'POST', auth:false, json:{ challengeToken: admin2fa.challengeToken, code } });
+    admin2fa = { challengeToken:null, maskedPhone:'', devCode:null };
+    await afterAuthSuccess(res.data.token);
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; btn.textContent = 'تأكيد ودخول'; }
+  }
+}
+
+const screens = { landing: screenLanding, login: screenLogin, forgot: screenForgot, reg1: screenReg1, reg2: screenReg2, twofa: screen2fa };
+
+/* ============================================================
+   تسجيل الدخول
+   ============================================================ */
+// أي إدخال مش رقم هاتف مكوّن من 10 أرقام بالضبط = محاولة دخول أدمن (باسم مستخدم)
+// نوع أدمن واحد بصلاحيات كاملة (بيدخل باسم مستخدم)
+
+async function doLogin(){
+  const idValue = document.getElementById('loginPhone').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if(!pass){ toast('الرجاء إدخال كلمة المرور', 'danger'); return; }
+
+  const looksNumeric = /^\d+$/.test(idValue);
+  if(looksNumeric && idValue.length !== 10){
+    toast('رقم الهاتف يجب أن يتكون من 10 أرقام', 'danger');
+    return;
+  }
+  const isAdminAttempt = !(looksNumeric && idValue.length === 10);
+  if(isAdminAttempt && idValue.length < 2){
+    toast('الرجاء إدخال رقم الهاتف أو اسم المستخدم', 'danger');
+    return;
+  }
+
+  const btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الدخول...'; }
+  try{
+    const res = isAdminAttempt
+      ? await apiRequest('/auth/admin/login', { method:'POST', auth:false, json:{ username: idValue, password: pass } })
+      : await apiRequest('/auth/pharmacist/login', { method:'POST', auth:false, json:{ phoneNumber: idValue, password: pass } });
+    // تحقق بخطوتين للأدمن (لو مفعّل): السيرفر بيرجّع challengeToken بدل التوكن
+    if(res.data && res.data.requires2fa){
+      admin2fa = { challengeToken: res.data.challengeToken, maskedPhone: res.data.maskedPhone || '', devCode: res.data.devOtpCode || null };
+      goto('twofa');
+      return;
+    }
+    await afterAuthSuccess(res.data.token);
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; btn.textContent = 'دخول'; }
+  }
+}
+
+async function afterAuthSuccess(newToken){
+  token = newToken;
+  localStorage.setItem('mm_token', token);
+  await loadMe();
+  clearAllCaches();
+  resetAddFlow();
+  toast('مرحبًا ' + currentUser.fullName + ' 👋');
+  if(currentUser.type === 'admin'){
+    // الأدمن: أول شي شاشة اختيار اللوحة (أدوية / كوزمتك)
+    adminPanelChosen = false; adminDeptFilter = '';
+    activeTab = 'admin';
+    render();
+  } else {
+    // الصيدلي يختار القسم أول شي (شاشة deptChoice تظهر تلقائيًا لأن selectedDepartment فاضي)
+    render();
+  }
+}
+
+async function loadMe(){
+  const res = await apiRequest('/users/me');
+  currentUser = res.data;
+  // نوع أدمن واحد بصلاحيات كاملة: هالعلامة بتخلّي كل كود الواجهة القديم (اللي كان بيفرّق بين
+  // أدمن قسم وأدمن رئيسي) يتعامل مع الأدمن كصاحب صلاحيات كاملة، والقسم بيجي من اللوحة المختارة.
+  if(currentUser.type === 'admin') currentUser.role = 'SUPER_ADMIN';
+}
+
+function doLogout(){
+  token = null; currentUser = null;
+  localStorage.removeItem('mm_token');
+  selectedDepartment = null; adminDeptFilter = ''; adminPanelChosen = false; saleMode = null;
+  resetReg(); resetForgot(); payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null;
+  clearAllCaches();
+  goto('landing');
+}
+
+function clearAllCaches(){
+  CATEGORIES = []; mySalesCache = null; adminSalesCache = null; pharmacistsCache = null;
+  historyFilterType = null; showFreeItemsSummary = false; referralSummaryCache = null;
+  leaderboardCache = null; adminFilterActive = false; statsFilterActive = false;
+  payoutsData = null; payoutsMonth = ''; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
+  adminPharmacistFilter = null;
+  compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
+  compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
+  compReportsRows = { ASIL: null, ZAROZA: null }; compReportsActive = { ASIL:false, ZAROZA:false };
+}
+
+// يحدد القسم المطلوب إرساله للسيرفر حسب نوع المستخدم الحالي
+function currentDepartmentParam(){
+  if(currentUser.type === 'pharmacist') return selectedDepartment;
+  return adminDeptFilter || null; // الأدمن: اللوحة اللي دخلها (أدوية/كوزمتك)
+}
+
+async function loadCategories(){
+  const dep = currentDepartmentParam();
+  const qs = dep ? ('?department=' + dep) : '';
+  const res = await apiRequest('/categories' + qs);
+  CATEGORIES = res.data;
+}
+
+// يحمّل أصناف تعويض الأصيل/زاروزا (type=ASIL أو ZAROZA) حسب القسم الحالي، ويخزّنها بالكاش
+async function loadCompensationItems(type){
+  const dep = currentDepartmentParam() || 'COSMETICS';
+  const qs = '?type=' + type + (dep ? ('&department=' + dep) : '');
+  const res = await apiRequest('/compensation-items' + qs);
+  compensationItemsCache[type] = res.data;
+}
+
+/* ============================================================
+   بعد تسجيل الدخول — التطبيق الرئيسي
+   ============================================================ */
+function adminRoleLabel(_u){
+  return 'المدير';
+}
+
+function screenAppShell(){
+  const isAdmin = currentUser.type === 'admin';
+  const isSuperAdmin = isAdmin && currentUser.role === 'SUPER_ADMIN';
+  const wideTabs = ['admin','reports','users','stats','payouts','account','compReportsAsil','compReportsZaroza'];
+  const isWide = wideTabs.includes(activeTab);
+  const nameLine = esc(isAdmin ? currentUser.fullName : currentUser.pharmacyName);
+  const subLine = isAdmin ? (adminRoleLabel(currentUser) + ' · لوحة التحكم') : (esc(currentUser.fullName) + ' · ' + esc(currentUser.city));
+  return `
+  <div class="app-header">
+    <div class="app-header-top">
+      <div>
+        <div class="pharmacy">${nameLine}</div>
+        <div class="sub">${subLine}</div>
+      </div>
+      <button class="logout" onclick="doLogout()">خروج</button>
+    </div>
+    ${!isAdmin ? `
+    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12.5px;font-weight:700;">القسم الحالي: ${deptLabel(selectedDepartment)}</span>
+      <button class="logout" style="padding:6px 10px;" onclick="switchDepartment()">تبديل القسم</button>
+    </div>` : ''}
+    ${!isAdmin && selectedDepartment==='COSMETICS' ? `
+    <div style="margin-top:8px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12.5px;font-weight:700;">نوع العملية: ${saleModeLabel(saleMode)}</span>
+      <button class="logout" style="padding:6px 10px;" onclick="switchSaleMode()">تبديل</button>
+    </div>` : ''}
+    ${isAdmin ? `
+    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12.5px;font-weight:700;">اللوحة الحالية: ${deptLabel(adminDeptFilter)}</span>
+      <button class="logout" style="padding:6px 10px;" onclick="switchAdminPanel()">تبديل اللوحة</button>
+    </div>` : ''}
+  </div>
+  <div class="app-body ${isWide?'wide':''}" id="tabContent">
+    ${activeTab==='add' ? tabAdd() : ''}
+    ${activeTab==='history' ? tabHistory() : ''}
+    ${activeTab==='payout' ? tabPayout() : ''}
+    ${activeTab==='referral' ? tabReferral() : ''}
+    ${activeTab==='reports' ? tabReports() : ''}
+    ${activeTab==='compReportsAsil' ? tabCompReports('ASIL') : ''}
+    ${activeTab==='compReportsZaroza' ? tabCompReports('ZAROZA') : ''}
+    ${activeTab==='users' ? tabCategoriesMgmt() : ''}
+    ${activeTab==='stats' ? tabPharmacists() : ''}
+    ${activeTab==='payouts' ? tabPayouts() : ''}
+    ${activeTab==='leaderboard' ? tabLeaderboard() : ''}
+    ${activeTab==='admin' ? tabAdmin() : ''}
+    ${activeTab==='account' ? tabAccount() : ''}
+  </div>
+  <div class="tabbar-fixed-wrap ${isWide?'wide':''}">
+    <div class="tabbar ${isWide?'wide':''}">
+      ${!isAdmin ? `<button class="${activeTab==='add'?'active':''}" onclick="switchTab('add')"><span class="ic">＋</span>إضافة</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='history'?'active':''}" onclick="switchTab('history')"><span class="ic">🧾</span>السجل</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='payout'?'active':''}" onclick="switchTab('payout')"><span class="ic">💳</span>الدفع</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
+      ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsAsil'?'active':''}" onclick="switchTab('compReportsAsil')"><span class="ic">🔄</span>تعويض الأصيل</button>` : ''}
+      ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='users'?'active':''}" onclick="switchTab('users')"><span class="ic">🗂️</span>الأصناف</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='stats'?'active':''}" onclick="switchTab('stats')"><span class="ic">📈</span>العملاء المسجلون</button>` : ''}
+      <button class="${activeTab==='leaderboard'?'active':''}" onclick="switchTab('leaderboard')"><span class="ic">🏆</span>الترتيب</button>
+      ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='account'?'active':''}" onclick="switchTab('account')"><span class="ic">🔑</span>حسابي</button>` : ''}
+    </div>
+  </div>`;
+}
+
+async function switchTab(tab){
+  activeTab = tab;
+  if(tab==='admin'){ adminPharmacistFilter = null; }
+  if(tab==='payouts'){ confirmingPayoutId = null; }
+  if(tab==='account'){ accountMsg = null; }
+  if(tab==='add'){ resetAddFlow(); }
+  if(tab==='payout'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; }
+  if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
+  if(tab==='history'){
+    // قسم الأدوية عنده نوع فواتير واحد بس، فنختاره تلقائيًا بدون ما نعرض شاشة اختيار
+    historyFilterType = selectedDepartment==='MEDICINE' ? 'NORMAL' : null;
+    showFreeItemsSummary = false;
+  }
+  render();
+  await loadTabData(tab);
+}
+
+async function loadTabData(tab){
+  try{
+    if(tab==='add'){
+      if(selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA')){
+        if(!compensationItemsCache[saleMode]){ await loadCompensationItems(saleMode); render(); }
+      } else {
+        // نعيد تحميل الأصناف في كل مرة (مو بس أول مرة) لأن العمولة الفعلية
+        // لكل صنف (effectiveCommissionPerUnit) شخصية للصيدلي وبتتغيّر بمجرد
+        // ما الأدمن يوافق على فواتيره — لازم تنعرض محدّثة كل ما فتح الشاشة
+        await loadCategories(); render();
+      }
+    }
+    if(tab==='history'){ await loadMySales(); render(); }
+    if(tab==='payout'){ await loadMySales(); render(); }
+    if(tab==='referral'){ await loadReferralSummary(); render(); }
+    if(tab==='leaderboard'){ await loadLeaderboard(); render(); }
+    if(tab==='admin'){ await loadAdminSales(); render(); }
+    if(tab==='users'){ await loadCategories(); render(); }
+    if(tab==='stats'){ await loadPharmacists(); render(); }
+    if(tab==='payouts'){ await loadPayouts(); render(); }
+    if(tab==='reports' && !pharmacistsCache){ await loadPharmacists(); render(); }
+    if((tab==='compReportsAsil' || tab==='compReportsZaroza') && !pharmacistsCache){ await loadPharmacists(); render(); }
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function loadMySales(){
+  const res = await apiRequest('/sales?pageSize=200');
+  mySalesCache = res.data.items;
+}
+async function loadReferralSummary(){
+  const res = await apiRequest('/referral/me');
+  referralSummaryCache = res.data;
+}
+async function loadAdminSales(){
+  // لو الأدمن جاي من صفحة الدفعات لمراجعة فواتير صيدلي معيّن: بنعرض فواتيره بالقسمين
+  const qs = adminPharmacistFilter
+    ? ('&pharmacistId=' + adminPharmacistFilter)
+    : (currentDepartmentParam() ? ('&department=' + currentDepartmentParam()) : '');
+  const res = await apiRequest('/sales?pageSize=300' + qs);
+  adminSalesCache = res.data.items;
+}
+async function loadPharmacists(){
+  const res = await apiRequest('/users/pharmacists');
+  pharmacistsCache = res.data;
+}
+async function loadLeaderboard(){
+  const dep = currentDepartmentParam();
+  const qs = dep ? ('?department=' + dep) : '';
+  const res = await apiRequest('/leaderboard' + qs);
+  leaderboardCache = res.data;
+}
+async function loadPayouts(){
+  const qs = payoutsMonth ? ('?month=' + payoutsMonth) : '';
+  const res = await apiRequest('/payouts' + qs);
+  payoutsData = res.data;
+  payoutsMonth = payoutsData.month;
+}
+
+/* -------------------- تبويب: إضافة / تعديل عملية بيع -------------------- */
+function tabAdd(){
+  if(selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA')){
+    return tabAddCompensation();
+  }
+  if(CATEGORIES.length===0){
+    return `<div class="section-title">إضافة عملية بيع</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
+  }
+  const isEditing = false; // لا يوجد تعديل بعد الإرسال
+
+  if(lastSubmittedSale){
+    const s = lastSubmittedSale;
+    return `
+    <div class="ticket">
+      <div class="commission-hero">
+        <div class="lbl">⏳ تم إرسال العملية للمراجعة</div>
+        <div class="amt"><span class="cur">دينار</span>${fmtMoney(s.commissionAmount)}</div>
+        <div class="lbl">قيمة العمولة المتوقعة</div>
+        <div style="margin-top:10px;"><span class="badge pending">بانتظار موافقة الإدارة</span></div>
+      </div>
+      <div style="border-top:1px dashed var(--border);margin-top:14px;padding-top:12px;font-size:13.5px;color:var(--ink-soft);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>الصنف</span><b style="color:var(--ink);">${saleItemLabel(s)}</b></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>عدد القطع</span><b class="num" style="color:var(--ink);">${s.quantity}</b></div>
+        <div style="display:flex;justify-content:space-between;"><span>تاريخ الفاتورة</span><b style="color:var(--ink);">${fmtDate(s.saleDate)}</b></div>
+        ${s.invoiceNumber ? `<div style="display:flex;justify-content:space-between;margin-top:6px;"><span>رقم الفاتورة</span><b class="num" style="color:var(--ink);">${esc(s.invoiceNumber)}</b></div>` : ''}
+      </div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--ink-soft);line-height:1.7;">لا يمكن تعديل العملية أو حذفها بعد الإرسال. لو في خطأ، سيتم رفضها من الإدارة وتقدر ترسل عملية جديدة.</div>
+    </div>
+    <button class="btn" onclick="finalizeSale()">تسجيل عملية بيع جديدة</button>`;
+  }
+
+  const cat = CATEGORIES.find(c=>c.id===addFlow.categoryId);
+
+  return `
+  <div class="section-title">${isEditing ? 'تعديل عملية بيع' : 'تسجيل عملية بيع'}</div>
+  ${isEditing ? `<div class="otp-banner" style="margin-bottom:18px;"><span>أنت تعدّل عملية موجودة — يمكن التعديل ما دامت "قيد المراجعة"</span></div>` : ''}
+
+  <div class="step-block ${addFlow.categoryId?'step-done':''}">
+    <div class="step-label"><span class="step-num">1</span> اختر الصنف</div>
+    <select class="cat-select" onchange="pickCategory(this.value)">
+      <option value="" ${!addFlow.categoryId?'selected':''} disabled>اختر صنف المنتج</option>
+      ${CATEGORIES.map(c=>`<option value="${c.id}" ${addFlow.categoryId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.effectiveCommissionPerUnit ?? c.commissionPerUnit)} دينار/قطعة</option>`).join('')}
+    </select>
+  </div>
+
+  ${addFlow.categoryId ? `
+  <div class="step-block ${addFlow.qty?'step-done':''}">
+    <div class="step-label"><span class="step-num">2</span> عدد القطع المباعة</div>
+    <div class="row2">
+      <input type="number" id="qtyInput" min="1" step="1" placeholder="مثال: 5" value="${addFlow.qty||''}">
+      <button class="btn sm" style="flex:0 0 auto;" onclick="saveQty()">حفظ</button>
+    </div>
+  </div>` : ''}
+
+  ${addFlow.qty ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'حفظ وتسجيل العمولة', isEditing) : ''}
+  `;
+}
+
+/* -------------------- تبويب: إضافة عملية تعويض (الأصيل / زاروزا) -------------------- */
+function tabAddCompensation(){
+  const title = saleMode==='ASIL' ? 'تسجيل تعويض الأصيل' : 'تسجيل تعويض زاروزا';
+  const items = compensationItemsCache[saleMode];
+
+  if(items===null || items===undefined){
+    return `<div class="section-title">${title}</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
+  }
+
+  const isEditing = false; // لا يوجد تعديل بعد الإرسال
+
+  if(lastSubmittedSale){
+    const s = lastSubmittedSale;
+    return `
+    <div class="ticket">
+      <div class="commission-hero">
+        <div class="lbl" style="font-size:16px;font-weight:800;">✅ تم إرسال طلب التعويض بنجاح</div>
+        <div style="margin-top:10px;font-size:13.5px;color:var(--ink-soft);">سيتم التحقق من فاتورة التعويض. شكرًا لك</div>
+        <div style="margin-top:12px;"><span class="badge pending">بانتظار موافقة الإدارة</span></div>
+      </div>
+      <div style="border-top:1px dashed var(--border);margin-top:14px;padding-top:12px;font-size:13.5px;color:var(--ink-soft);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>الصنف</span><b style="color:var(--ink);">${s.compensationItem ? esc(s.compensationItem.name) : ''}</b></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>الصنف الفري</span><b style="color:var(--ink);">${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : ''}</b></div>
+        <div style="display:flex;justify-content:space-between;"><span>تاريخ البيع</span><b style="color:var(--ink);">${fmtDate(s.saleDate)}</b></div>
+      </div>
+    </div>
+    <button class="btn" onclick="finalizeSale()">تسجيل عملية جديدة</button>`;
+  }
+
+  if(items.length===0){
+    return `
+    <div class="section-title">${title}</div>
+    <div class="empty-state">
+      <div class="ic">🗂️</div>
+      <div class="t">لا توجد أصناف مضافة بعد</div>
+      <div class="d">الرجاء التواصل مع الإدارة لإضافة الأصناف</div>
+    </div>`;
+  }
+
+  const mainItem = items.find(c=>c.id===addFlow.mainItemId);
+
+  return `
+  <div class="section-title">${title}</div>
+  ${isEditing ? `<div class="otp-banner" style="margin-bottom:18px;"><span>أنت تعدّل عملية موجودة — يمكن التعديل ما دامت "قيد المراجعة"</span></div>` : ''}
+
+  <div class="step-block ${addFlow.mainItemId?'step-done':''}">
+    <div class="step-label"><span class="step-num">1</span> اختر الصنف</div>
+    <select class="cat-select" onchange="pickMainItem(this.value)">
+      <option value="" ${!addFlow.mainItemId?'selected':''} disabled>اختر صنف المنتج</option>
+      ${items.map(c=>`<option value="${c.id}" ${addFlow.mainItemId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.price)} دينار</option>`).join('')}
+    </select>
+  </div>
+
+  ${addFlow.mainItemId ? `
+  <div class="step-block ${addFlow.freeItemId?'step-done':''}">
+    <div class="step-label"><span class="step-num">2</span> اختر الصنف الفري (المجاني)</div>
+    <select class="cat-select" onchange="pickFreeItem(this.value)">
+      <option value="" ${!addFlow.freeItemId?'selected':''} disabled>اختر الصنف الفري</option>
+      ${items.map(c=>`<option value="${c.id}" ${addFlow.freeItemId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.price)} دينار</option>`).join('')}
+    </select>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">* يجب أن يكون سعر الصنف الفري أقل من أو يساوي سعر الصنف الأساسي (${fmtMoney(mainItem.price)} دينار)</div>
+  </div>` : ''}
+
+  ${addFlow.freeItemId ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'إرسال طلب التعويض', isEditing) : ''}
+  `;
+}
+
+function pickMainItem(id){
+  addFlow.mainItemId = id; addFlow.freeItemId=null; addFlow.date=null;
+  pendingInvoiceFile=null; pendingInvoicePreview=null;
+  render();
+}
+
+function pickFreeItem(id){
+  const items = compensationItemsCache[saleMode] || [];
+  const mainItem = items.find(c=>c.id===addFlow.mainItemId);
+  const freeItem = items.find(c=>c.id===id);
+  if(!mainItem || !freeItem) return;
+  if(Number(freeItem.price) > Number(mainItem.price)){
+    toast('يجب أن يكون سعر الفري أقل من أو يساوي سعر الأصلي', 'danger');
+    render(); // بيرجع القائمة لوضعها الأصلي (بدون اختيار)
+    return;
+  }
+  addFlow.freeItemId = id;
+  if(!addFlow.date) addFlow.date = toLocalDateStr(new Date());
+  pendingInvoiceFile=null; pendingInvoicePreview=null;
+  render();
+}
+
+// خطوة مشتركة: رقم الفاتورة + تاريخ الفاتورة + إرفاق صورة الفاتورة (كاميرا مباشرة أو من المكتبة)
+function invoiceDateBounds(){
+  const now = new Date();
+  const min = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60);
+  return { min: toLocalDateStr(min), max: toLocalDateStr(now) };
+}
+function canSubmitInvoice(){
+  return !!(pendingInvoiceFile && (addFlow.invoiceNumber||'').trim() && addFlow.date);
+}
+function updateFinalBtn(){
+  const btn = document.getElementById('finalSaveBtn');
+  if(btn) btn.disabled = !canSubmitInvoice();
+}
+function onInvoiceNumberInput(el){ addFlow.invoiceNumber = el.value; updateFinalBtn(); }
+
+function renderInvoiceStep(stepNum, submitLabel, _isEditing){
+  const b = invoiceDateBounds();
+  const dateBlock = addFlow.dateEditing ? `
+    <div class="row2" style="margin-bottom:12px;">
+      <input type="date" id="dateInput" value="${esc(addFlow.date||b.max)}" min="${b.min}" max="${b.max}">
+      <button class="btn sm" style="flex:0 0 auto;" onclick="saveDate()">حفظ</button>
+    </div>` : `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:13.5px;color:var(--ink-soft);">
+      <span>تاريخ الفاتورة: <b style="color:var(--ink);">${fmtDate(addFlow.date)}</b></span>
+      <button type="button" onclick="toggleDateEdit()" style="border:none;background:none;color:var(--primary);cursor:pointer;font-size:13.5px;font-weight:700;text-decoration:underline;padding:0;">(تغيير التاريخ)</button>
+    </div>`;
+
+  return `
+  <div class="step-block">
+    <div class="step-label"><span class="step-num">${stepNum}</span> بيانات الفاتورة</div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>رقم الفاتورة</label>
+      <input type="text" id="invoiceNumberInput" maxlength="50" placeholder="اكتب رقم الفاتورة كما هو مطبوع عليها" value="${esc(addFlow.invoiceNumber||'')}" oninput="onInvoiceNumberInput(this)">
+    </div>
+    ${dateBlock}
+    <div class="row2" style="margin-bottom:10px;">
+      <button type="button" class="btn sm" style="flex:1;" onclick="document.getElementById('invoiceFileCamera').click()">📷 التقط صورة</button>
+      <button type="button" class="btn sm ghost" style="flex:1;" onclick="document.getElementById('invoiceFileGallery').click()">🖼️ من المكتبة</button>
+    </div>
+    <input type="file" id="invoiceFileCamera" accept="image/*" capture="environment" style="display:none" onchange="handleInvoiceFile(this)">
+    <input type="file" id="invoiceFileGallery" accept="image/*" style="display:none" onchange="handleInvoiceFile(this)">
+    ${pendingInvoicePreview ? `
+    <div class="file-drop">
+      <img id="invoicePreview" class="preview-img" src="${pendingInvoicePreview}" style="display:block">
+    </div>` : ''}
+    <div style="font-size:12px;color:var(--ink-soft);line-height:1.7;margin-top:10px;">
+      ⚠️ بعد الإرسال ما بتقدر تعدّل العملية أو تحذفها، تأكد من الصورة ورقم الفاتورة والكمية.<br>
+      🗓️ العملية بتُحسب بشهر إرسالها (آخر موعد 11:59 مساءً آخر يوم بالشهر بتوقيت الأردن).
+    </div>
+    <button class="btn" id="finalSaveBtn" style="margin-top:12px;" ${canSubmitInvoice()?'':'disabled'} onclick="saveInvoiceAndFinish()">${submitLabel}</button>
+  </div>`;
+}
+
+function toggleDateEdit(){ addFlow.dateEditing = true; render(); }
+
+function pickCategory(id){ addFlow.categoryId = id; addFlow.qty=null; addFlow.date=null; addFlow.dateEditing=false; pendingInvoiceFile=null; pendingInvoicePreview=null; render(); }
+
+function saveQty(){
+  const v = parseInt(document.getElementById('qtyInput').value, 10);
+  if(!v || v < 1){ toast('الرجاء إدخال عدد قطع صحيح', 'danger'); return; }
+  addFlow.qty = v;
+  if(!addFlow.date) addFlow.date = toLocalDateStr(new Date());
+  render();
+}
+
+function saveDate(){
+  const v = document.getElementById('dateInput').value;
+  if(!v){ toast('الرجاء اختيار تاريخ البيع', 'danger'); return; }
+  addFlow.date = v; addFlow.dateEditing = false;
+  render();
+}
+
+async function handleInvoiceFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  try{
+    const { blob, dataUrl } = await resizeImageToBlob(file);
+    pendingInvoiceFile = new File([blob], 'invoice.jpg', { type:'image/jpeg' });
+    pendingInvoicePreview = dataUrl;
+    const prev = document.getElementById('invoicePreview');
+    if(prev){ prev.src = dataUrl; prev.style.display = 'block'; }
+    updateFinalBtn();
+  }catch(e){
+    toast(e.message, 'danger');
+  }
+}
+
+async function saveInvoiceAndFinish(){
+  if(!pendingInvoiceFile){ toast('الرجاء إرفاق صورة الفاتورة', 'danger'); return; }
+  const invNo = (addFlow.invoiceNumber||'').trim();
+  if(!invNo){ toast('الرجاء إدخال رقم الفاتورة', 'danger'); return; }
+
+  const isCompensation = selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA');
+
+  const btn = document.getElementById('finalSaveBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
+  try{
+    const fd = new FormData();
+    if(isCompensation){
+      fd.append('saleType', saleMode);
+      fd.append('compensationItemId', addFlow.mainItemId);
+      fd.append('freeCompensationItemId', addFlow.freeItemId);
+    } else {
+      fd.append('saleType', 'NORMAL');
+      fd.append('categoryId', addFlow.categoryId);
+      fd.append('quantity', addFlow.qty);
+    }
+    fd.append('saleDate', addFlow.date);
+    fd.append('invoiceNumber', invNo);
+    fd.append('invoiceImage', pendingInvoiceFile);
+
+    const res = await apiRequest('/sales', { method:'POST', form: fd });
+    lastSubmittedSale = res.data;
+    pendingInvoiceFile = null; pendingInvoicePreview = null;
+    mySalesCache = null;
+    render();
+  }catch(e){
+    toast(e.message, 'danger');
+    const defaultLabel = isCompensation ? 'إرسال طلب التعويض' : 'حفظ وتسجيل العمولة';
+    if(btn){ btn.disabled = false; btn.textContent = defaultLabel; }
+  }
+}
+
+function finalizeSale(){
+  resetAddFlow();
+  render();
+}
+
+// يرجع اسم/وصف الصنف المعروض لعملية بيع، سواء كانت بيع عادي أو تعويض أصيل/زاروزا
+function saleItemLabel(s){
+  const type = s.saleType || 'NORMAL';
+  if(type === 'ASIL' || type === 'ZAROZA'){
+    const mainName = s.compensationItem ? esc(s.compensationItem.name) : '—';
+    const freeName = s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—';
+    return `${mainName} <span style="color:var(--ink-soft);font-weight:500;">(فري: ${freeName})</span>`;
+  }
+  return s.category ? esc(s.category.name) : '';
+}
+
+/* -------------------- تبويب: السجل -------------------- */
+function tabHistory(){
+  if(mySalesCache===null){
+    return `<div class="section-title">سجل المبيعات</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+
+  // أول ما يدخل الصيدلي على السجل لازم يحدد نوع الفواتير اللي بدو يشوفها
+  if(!historyFilterType){
+    return `
+    <div class="section-title">سجل المبيعات</div>
+    <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;">اختر نوع الفواتير اللي بدك تعرضها</p>
+    ${historyFiltersForCurrentDept().map(f=>`
+      <button class="btn ${f.value==='NORMAL'?'':'accent'}" style="margin-bottom:12px;font-size:15.5px;padding:16px;" onclick="pickHistoryFilter('${f.value}')">
+        ${f.icon} ${f.label}
+      </button>`).join('')}
+    `;
+  }
+
+  const mySales = mySalesCache.filter(s =>
+    (s.saleType || 'NORMAL') === historyFilterType &&
+    (historyFilterType!=='NORMAL' || s.department===selectedDepartment)
+  );
+  const isComp = historyFilterType==='ASIL' || historyFilterType==='ZAROZA';
+  const approvedCount = mySales.filter(s=>s.status==='APPROVED').length;
+  const pendingCount = mySales.filter(s=>s.status==='PENDING').length;
+  const approvedTotal = mySales.filter(s=>s.status==='APPROVED').reduce((sum,s)=>sum+Number(s.commissionAmount),0);
+  const pendingTotal = mySales.filter(s=>s.status==='PENDING').reduce((sum,s)=>sum+Number(s.commissionAmount),0);
+  const backRow = historyFiltersForCurrentDept().length > 1
+    ? `<div class="back-row" style="margin-bottom:6px;"><button onclick="pickHistoryFilter(null)">‹ تغيير نوع الفواتير</button></div>`
+    : '';
+  const freeItemsBtn = isComp ? `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة'}</button>` : '';
+
+  if(mySales.length===0){
+    return `
+    ${backRow}
+    <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
+    <div class="empty-state">
+      <div class="ic">🧾</div>
+      <div class="t">لا يوجد سجل بعد</div>
+      <div class="d">ابدأ بتسجيل أول عملية من تبويب «إضافة»</div>
+    </div>`;
+  }
+
+  return `
+  ${backRow}
+  <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
+  ${freeItemsBtn}
+  ${isComp && showFreeItemsSummary ? freeItemsSummaryHtml(mySales) : ''}
+  ${isComp ? `
+  <div class="history-summary">
+    <div>
+      <div class="lbl">فواتير التعويض المؤكدة</div>
+      <div class="val num">${approvedCount} فاتورة</div>
+    </div>
+    <div class="cnt">عدد العمليات<b class="num">${mySales.length}</b></div>
+  </div>
+  ${pendingCount>0 ? `<div style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;">+ ${pendingCount} فاتورة بانتظار المراجعة</div>` : ''}
+  ` : `
+  <div class="history-summary">
+    <div>
+      <div class="lbl">إجمالي العمولات المؤكدة</div>
+      <div class="val num">${fmtMoney(approvedTotal)} د.أ</div>
+    </div>
+    <div class="cnt">عدد العمليات<b class="num">${mySales.length}</b></div>
+  </div>
+  ${pendingTotal>0 ? `<div style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;">+ ${fmtMoney(pendingTotal)} د.أ بانتظار المراجعة</div>` : ''}
+  `}
+  ${mySales.map(s=>{
+    return `
+    <div class="ticket">
+      <div class="sale-row">
+        ${s.invoiceImageUrl ? `<img class="thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
+        <div style="flex:1;">
+          ${isComp ? `
+          <div class="cat" style="margin-bottom:3px;">القطعة المباعة : <b>${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
+          <div class="cat" style="margin-bottom:3px;">قطعة التعويض : <b>${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
+          <div class="meta">${fmtDate(s.saleDate)}</div>
+          ` : `
+          <div class="cat">${saleItemLabel(s)}</div>
+          <div class="meta">${s.quantity} قطعة · ${fmtDate(s.saleDate)}${s.invoiceNumber ? ' · فاتورة ' + esc(s.invoiceNumber) : ''}</div>
+          `}
+          <div style="margin-top:5px;">${statusBadgeHtml(s)}</div>
+          ${s.status==='REJECTED' ? `<div class="meta" style="color:var(--danger);margin-top:4px;">تم رفض الطلب — السبب: ${esc(s.rejectionReason||'غير محدد')}</div>` : ''}
+        </div>
+        ${isComp ? '' : `<div class="commission">${fmtMoney(s.commissionAmount)} د.أ</div>`}
+      </div>
+    </div>`;
+  }).join('')}
+  `;
+}
+
+// ملخص القطع الفري (قطع التعويض) المستحقة للصيدلي من الفواتير المؤكدة فقط
+function freeItemsSummaryHtml(mySales){
+  const approved = mySales.filter(s=>s.status==='APPROVED');
+  const counts = {};
+  approved.forEach(s=>{
+    const name = s.freeCompensationItem ? s.freeCompensationItem.name : 'غير محدد';
+    counts[name] = (counts[name]||0) + 1;
+  });
+  const entries = Object.entries(counts);
+  if(entries.length===0){
+    return `
+    <div class="ticket" style="margin-bottom:16px;">
+      <div style="text-align:center;color:var(--ink-soft);font-size:13px;padding:6px 0;">ما في قطع فري مستحقة بعد — بتظهر هون أول ما تنعتمد أول فاتورة</div>
+    </div>`;
+  }
+  const total = entries.reduce((sum,[,c])=>sum+c, 0);
+  return `
+  <div class="ticket" style="margin-bottom:16px;">
+    <div style="font-weight:800;margin-bottom:10px;">🎁 القطع الفري المستحقة (من الفواتير المؤكدة)</div>
+    ${entries.map(([name,count])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border);">
+        <span>${esc(name)}</span><b class="num">× ${count}</b>
+      </div>`).join('')}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;font-weight:800;">
+      <span>الإجمالي</span><span class="num">${total} قطعة</span>
+    </div>
+  </div>`;
+}
+
+function pickHistoryFilter(type){
+  historyFilterType = type;
+  showFreeItemsSummary = false;
+  render();
+}
+
+function toggleFreeItemsSummary(){
+  showFreeItemsSummary = !showFreeItemsSummary;
+  render();
+}
+
+/* -------------------- تبويب: الدفع -------------------- */
+function computeMyPayoutSummary(){
+  const mySales = mySalesCache || [];
+  const approved = mySales.filter(s=>s.status==='APPROVED');
+  const pending = approved.filter(s=>!s.paid).reduce((a,s)=>a+Number(s.commissionAmount),0);
+  const transferredSales = approved.filter(s=>s.paid);
+  const transferred = transferredSales.reduce((a,s)=>a+Number(s.commissionAmount),0);
+  const lastTransfer = transferredSales.sort((a,b)=> new Date(b.paidAt)-new Date(a.paidAt))[0];
+  return { pending, transferred, lastTransferAt: lastTransfer ? lastTransfer.paidAt : null };
+}
+
+function tabPayout(){
+  if(mySalesCache===null){
+    return `<div class="section-title">الدفع</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const savedType = currentUser.payoutType || '';
+  const savedValue = currentUser.payoutValue || '';
+  if(!payoutDraft) payoutDraft = { type: savedType, value: savedValue };
+  const type = payoutDraft.type || '';
+  const summary = computeMyPayoutSummary();
+  const isChange = !!savedValue && (payoutDraft.type !== savedType || payoutDraft.value.trim() !== savedValue);
+
+  return `
+  <div class="section-title">الدفع</div>
+
+  <div class="history-summary" style="margin-bottom:10px;">
+    <div>
+      <div class="lbl">إجمالي العمولات المستحقة</div>
+      <div class="val num">${fmtMoney(summary.pending)} د.أ</div>
+    </div>
+    <div class="cnt"><span class="badge pending">تم التأكيد، بانتظار تحويل المبلغ</span></div>
+  </div>
+  ${summary.transferred>0 ? `
+  <div class="history-summary" style="background:linear-gradient(155deg,#1D7A4C,#175A32);margin-bottom:18px;">
+    <div>
+      <div class="lbl">تم تحويله سابقًا${summary.lastTransferAt ? ' — آخر تحويل ' + fmtDate(summary.lastTransferAt) : ''}</div>
+      <div class="val num">${fmtMoney(summary.transferred)} د.أ</div>
+    </div>
+    <div class="cnt"><span class="badge ok">✓ تم تحويل المبلغ</span></div>
+  </div>` : `<div style="height:6px;"></div>`}
+
+  <div class="otp-banner" style="display:block;line-height:1.8;margin-bottom:16px;">
+    💡 يتم تحويل المستحقات <b>مرة واحدة كل شهر (يوم 1)</b> عن فواتير الشهر الماضي المقبولة. الفواتير المرسلة من أول الشهر الجديد بتنحسب بالدفعة اللي بعدها.
+  </div>
+
+  <div class="section-title" style="font-size:15px;">بيانات استلام الدفعة</div>
+  <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
+    حدّد الطريقة التي تريد استلام مستحقاتك المالية عليها، ليتمكن المدير من تحويل المبلغ إليك بسهولة.
+  </p>
+
+  ${savedType && savedValue ? `
+  <div class="otp-banner" style="margin-bottom:16px;">
+    <span>البيانات المحفوظة حاليًا: ${payoutTypeLabel(savedType)}</span>
+    <span class="code" style="font-size:14px;letter-spacing:0;">${esc(savedValue)}</span>
+  </div>` : ''}
+
+  <div class="field">
+    <label>نوع الاستلام</label>
+    <select id="payoutType" onchange="onPayoutTypeChange(this.value)">
+      <option value="" ${type===''?'selected':''} disabled>اختر نوع الاستلام</option>
+      <option value="PHONE" ${type==='PHONE'?'selected':''}>رقم هاتف</option>
+      <option value="ALIAS" ${type==='ALIAS'?'selected':''}>اسم مستعار</option>
+    </select>
+  </div>
+
+  ${type ? `
+  <div class="field">
+    <label>${type==='PHONE' ? 'رقم الهاتف لاستلام الدفعة' : 'الاسم المستعار'}</label>
+    <input type="${type==='PHONE' ? 'tel' : 'text'}" id="payoutValue" ${type==='PHONE' ? 'maxlength="10" inputmode="numeric"' : 'maxlength="50"'}
+      placeholder="${type==='PHONE' ? 'مثال: 07XXXXXXXX' : 'مثال: اسم المحفظة أو الحساب'}"
+      value="${esc(payoutDraft.value)}" oninput="onPayoutValueInput(this.value)">
+  </div>
+  ${isChange ? `
+  <div class="otp-banner" style="display:block;line-height:1.8;margin-bottom:12px;">
+    🔒 لحمايتك، تغيير بيانات الاستلام يحتاج رمز تحقق يوصلك على هاتفك المسجّل.
+  </div>` : ''}
+  ${isChange && payoutOtpSent ? `
+  ${payoutOtpDev ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(payoutOtpDev)}</span></div>` : ''}
+  <div class="field">
+    <label>رمز التحقق (6 أرقام)</label>
+    <input type="text" id="payoutOtpCode" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
+  </div>` : ''}
+  <button class="btn" id="savePayoutBtn" onclick="savePayoutInfo()">${isChange ? (payoutOtpSent ? 'تأكيد وحفظ التغيير' : 'إرسال رمز التحقق') : 'حفظ'}</button>
+  ` : ''}
+  `;
+}
+
+function onPayoutTypeChange(v){
+  payoutDraft = { type: v, value: (v === currentUser.payoutType ? (currentUser.payoutValue||'') : '') };
+  payoutOtpSent = false; payoutOtpDev = null;
+  render();
+}
+function onPayoutValueInput(v){
+  if(!payoutDraft) payoutDraft = { type: currentUser.payoutType||'', value:'' };
+  payoutDraft.value = v;
+}
+
+async function savePayoutInfo(){
+  const type = payoutDraft ? payoutDraft.type : '';
+  if(!type){ toast('الرجاء اختيار نوع الاستلام', 'danger'); return; }
+  const valueEl = document.getElementById('payoutValue');
+  const value = valueEl ? valueEl.value.trim() : '';
+  if(!value){ toast('الرجاء إدخال ' + (type==='PHONE' ? 'رقم الهاتف' : 'الاسم المستعار'), 'danger'); return; }
+  if(type==='PHONE' && !/^\d{10}$/.test(value)){ toast('رقم الهاتف يجب أن يتكون من 10 أرقام', 'danger'); return; }
+  payoutDraft.value = value;
+
+  const savedValue = currentUser.payoutValue || '';
+  const isChange = !!savedValue && (type !== currentUser.payoutType || value !== savedValue);
+  const btn = document.getElementById('savePayoutBtn');
+
+  try{
+    if(isChange && !payoutOtpSent){
+      // الخطوة 1 من التغيير: إرسال رمز التحقق
+      if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
+      const r = await apiRequest('/users/me/payout/send-otp', { method:'POST' });
+      payoutOtpSent = true;
+      payoutOtpDev = r.data && r.data.devOtpCode ? r.data.devOtpCode : null;
+      toast('تم إرسال رمز التحقق إلى هاتفك');
+      render();
+      return;
+    }
+
+    const body = { payoutType:type, payoutValue:value };
+    if(isChange){
+      const code = (document.getElementById('payoutOtpCode')||{value:''}).value.trim();
+      if(!/^\d{6}$/.test(code)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
+      body.code = code;
+    }
+    const res = await apiRequest('/users/me/payout', { method:'PATCH', json:body });
+    currentUser.payoutType = res.data.payoutType;
+    currentUser.payoutValue = res.data.payoutValue;
+    payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null;
+    toast('تم حفظ بيانات الاستلام بنجاح');
+    render();
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; render(); }
+  }
+}
+
+/* -------------------- تبويب: الإحالة -------------------- */
+function tabReferral(){
+  if(referralSummaryCache===null){
+    return `<div class="section-title">🎁 إحالة صيدلي</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const s = referralSummaryCache;
+  const referralLink = window.location.origin + window.location.pathname + '?ref=' + s.referralCode;
+
+  return `
+  <div class="section-title">🎁 إحالة صيدلي</div>
+  <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
+    شارك الرابط أو الكود تبعك مع أي صيدلاني، ولما يسجل حساب جديد من خلاله ويسوي أول عملية بيع
+    ويوافق عليها الأدمن — بتاخذ <b style="color:var(--ink);">1 دينار</b> مكافأة إحالة تلقائيًا.
+  </p>
+
+  <div class="field">
+    <label>كود الإحالة تبعك</label>
+    <div class="otp-banner" style="margin-bottom:0;">
+      <span class="code" style="font-size:20px;letter-spacing:3px;">${s.referralCode || '—'}</span>
+      <button class="btn ghost sm" onclick="copyReferralText('${s.referralCode}')">نسخ الكود</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>رابط الدعوة (يفتح مباشرة على صفحة التسجيل بالكود معبّى تلقائيًا)</label>
+    <div class="otp-banner" style="margin-bottom:0;">
+      <span style="font-size:12.5px;word-break:break-all;">${referralLink}</span>
+      <button class="btn ghost sm" onclick="copyReferralText('${referralLink}')">نسخ الرابط</button>
+    </div>
+  </div>
+
+  <div class="history-summary" style="margin-top:20px;">
+    <div>
+      <div class="lbl">مكافآت مستحقة (بانتظار التحويل)</div>
+      <div class="val num">${fmtMoney(s.pendingAmount)} د.أ</div>
+    </div>
+    <div class="cnt">عدد المفعّلين<b class="num">${s.activatedCount}</b></div>
+  </div>
+  ${s.paidAmount>0 ? `<div style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;">تم تحويل ${fmtMoney(s.paidAmount)} د.أ سابقًا من مكافآت الإحالة</div>` : ''}
+
+  <div style="display:flex;gap:10px;margin:16px 0;">
+    <div class="cat-mgmt-row" style="flex:1;text-align:center;display:block;">
+      <div class="n num" style="font-size:22px;">${s.totalReferred}</div>
+      <div class="p">إجمالي من سجّل من خلالك</div>
+    </div>
+    <div class="cat-mgmt-row" style="flex:1;text-align:center;display:block;">
+      <div class="n num" style="font-size:22px;">${s.pendingActivationCount}</div>
+      <div class="p">لسا ما سوّوا أول بيعة مقبولة</div>
+    </div>
+  </div>
+
+  ${s.rewards.length>0 ? `
+  <div class="section-title" style="font-size:15px;">من فعّل الإحالة</div>
+  ${s.rewards.map(r=>`
+    <div class="ticket">
+      <div class="sale-row">
+        <div style="flex:1;">
+          <div class="cat">${esc(r.pharmacyName)}</div>
+          <div class="meta">${esc(r.fullName)} · انضم بتاريخ ${fmtDate(r.registeredAt)}</div>
+          <div style="margin-top:5px;">${r.paid ? '<span class="badge ok">تم تحويل المكافأة</span>' : '<span class="badge pending">مكافأة بانتظار التحويل</span>'}</div>
+        </div>
+        <div class="commission">${fmtMoney(r.amount)} د.أ</div>
+      </div>
+    </div>
+  `).join('')}
+  ` : `
+  <div class="empty-state">
+    <div class="ic">🎁</div>
+    <div class="t">ما في حدا فعّل الإحالة بعد</div>
+    <div class="d">شارك الرابط أو الكود فوق مع صيادلة تعرفهم</div>
+  </div>`}
+  `;
+}
+
+function copyReferralText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast('تم النسخ ✓')).catch(()=>toast('تعذر النسخ، انسخه يدويًا', 'danger'));
+  } else {
+    toast('تعذر النسخ التلقائي بهذا المتصفح، انسخه يدويًا', 'danger');
+  }
+}
+
+/* -------------------- تبويب: الترتيب -------------------- */
+function tabLeaderboard(){
+  if(leaderboardCache===null){
+    return `<div class="section-title">ترتيب هذا الشهر</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const { top10, myRank } = leaderboardCache;
+
+  if(!top10 || top10.length===0){
+    return `
+    <div class="section-title">ترتيب هذا الشهر</div>
+    <div class="empty-state">
+      <div class="ic">🏆</div>
+      <div class="t">لا يوجد ترتيب بعد</div>
+      <div class="d">أول عمولة مؤكدة هذا الشهر بتفتح الترتيب</div>
+    </div>`;
+  }
+
+  const rankClass = i => i===0?'gold':i===1?'silver':i===2?'bronze':'';
+  const myId = currentUser.type==='pharmacist' ? currentUser.id : null;
+
+  return `
+  <div class="section-title">ترتيب هذا الشهر</div>
+  ${top10.map((r,i)=>`
+    <div class="lb-row ${r.pharmacistId===myId?'me':''}">
+      <div class="lb-rank ${rankClass(i)}">${i+1}</div>
+      <div class="lb-name">
+        <div class="n">${esc(r.pharmacyName)}</div>
+        <div class="c">${esc(r.city)}</div>
+      </div>
+      <div class="lb-amt">${fmtMoney(r.totalCommission)} د.أ</div>
+    </div>
+  `).join('')}
+  ${(myRank && myRank.rank>10) ? `
+  <div class="divider">ترتيبك</div>
+  <div class="lb-row me">
+    <div class="lb-rank">${myRank.rank}</div>
+    <div class="lb-name">
+      <div class="n">${esc(myRank.pharmacyName)}</div>
+      <div class="c">${esc(myRank.city)}</div>
+    </div>
+    <div class="lb-amt">${fmtMoney(myRank.totalCommission)} د.أ</div>
+  </div>` : ''}
+  `;
+}
+
+/* -------------------- قائمة مراجعة الفواتير (لوحة الأدمن) -------------------- */
+function renderReviewQueue(){
+  const showDept = !!adminPharmacistFilter; // لما نراجع صيدلي معيّن بنعرض القسم لأن فواتيره من القسمين
+  const pendingSales = (adminSalesCache||[]).filter(s=>s.status==='PENDING').sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
+  return `
+  <div class="admin-section">
+    <div class="section-title">مراجعة الفواتير ${pendingSales.length>0 ? `<span class="badge pending" style="margin-right:8px;">${pendingSales.length}</span>` : ''}</div>
+    ${pendingSales.length===0 ? `<div class="empty-state"><div class="ic">✅</div><div class="t">لا توجد فواتير بانتظار المراجعة</div></div>` : `
+    ${pendingSales.map(s=>{
+      const p = s.pharmacist;
+      const isRejecting = rejectingId === s.id;
+      const isComp = s.saleType==='ASIL' || s.saleType==='ZAROZA';
+      return `
+      <div class="review-card">
+        <div class="review-top">
+          ${s.invoiceImageUrl ? `<img class="review-thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
+          <div class="review-info">
+            <div class="n">${esc(p ? p.pharmacyName : '')} ${isComp ? `<span class="badge" style="background:var(--primary-tint);color:var(--primary-dark);">${saleModeLabel(s.saleType)}</span>` : ''} ${showDept ? `<span class="badge" style="background:var(--primary-tint);color:var(--primary-dark);">${deptLabel(s.department)}</span>` : ''}</div>
+            ${isComp ? `
+            <div class="m" style="margin-top:5px;">القطعة المباعة : <b style="color:var(--ink);">${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
+            <div class="m">قطعة التعويض : <b style="color:var(--ink);">${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
+            <div class="m">${fmtDate(s.saleDate)}</div>
+            ` : `
+            <div class="n" style="margin-top:2px;">${saleItemLabel(s)}</div>
+            <div class="m">${s.quantity} قطعة · ${fmtDate(s.saleDate)}<br>عمولة متوقعة: <b class="num">${fmtMoney(s.commissionAmount)} د.أ</b></div>
+            `}
+            <div class="m" style="margin-top:3px;">رقم الفاتورة: <b class="num" style="color:var(--ink);">${esc(s.invoiceNumber || '—')}</b> · أُرسلت: ${fmtDate(s.createdAt)}</div>
+          </div>
+        </div>
+        ${s.isDuplicate ? `<div class="dup-warning">⚠️ يوجد سجل آخر بنفس الصنف/الكمية/التاريخ لنفس الصيدلي — الرجاء التدقيق قبل القبول</div>` : ''}
+        ${s.duplicateImageCount > 0 ? `<div class="dup-warning">⚠️ نفس صورة الفاتورة مستخدمة في ${s.duplicateImageCount} عملية أخرى — تأكد إنها مش نفس الفاتورة مكررة</div>` : ''}
+        ${s.invoiceNumberSharedWithOthers ? `<div class="dup-warning">⚠️ رقم الفاتورة هذا مستخدم من صيدلي آخر — الرجاء التدقيق</div>` : ''}
+        ${isRejecting ? `
+        <div class="field" style="margin-top:10px;margin-bottom:0;">
+          <textarea id="rejectReason_${s.id}" rows="2" placeholder="اكتب سبب الرفض هنا... (3 أحرف على الأقل)"></textarea>
+        </div>
+        <div class="review-actions">
+          <button class="btn danger sm" onclick="confirmRejectSale('${s.id}')">تأكيد الرفض</button>
+          <button class="btn ghost sm" onclick="cancelReject()">إلغاء</button>
+        </div>` : `
+        <div class="review-actions">
+          <button class="btn approve sm" onclick="approveSale('${s.id}')">✓ قبول</button>
+          <button class="btn danger sm" onclick="startReject('${s.id}')">✕ رفض</button>
+        </div>`}
+      </div>`;
+    }).join('')}
+    `}
+  </div>`;
+}
+
+async function approveSale(id){
+  try{
+    await apiRequest('/sales/' + id + '/review', { method:'PATCH', json:{ status:'APPROVED' } });
+    toast('تم قبول العملية وتأكيد العمولة');
+    await loadAdminSales();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+function startReject(id){ rejectingId = id; render(); }
+function cancelReject(){ rejectingId = null; render(); }
+async function confirmRejectSale(id){
+  const ta = document.getElementById('rejectReason_'+id);
+  const reason = ta ? ta.value.trim() : '';
+  if(!reason){ toast('الرجاء كتابة سبب الرفض', 'danger'); return; }
+  if(reason.length < 3){ toast('سبب الرفض يجب أن يكون 3 أحرف على الأقل', 'danger'); return; }
+  try{
+    await apiRequest('/sales/' + id + '/review', { method:'PATCH', json:{ status:'REJECTED', rejectionReason: reason } });
+    rejectingId = null;
+    toast('تم رفض العملية');
+    await loadAdminSales();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function reviewPharmacist(id){
+  adminPharmacistFilter = id;
+  activeTab = 'admin';
+  adminSalesCache = null;
+  render();
+  try{ await loadAdminSales(); render(); }catch(e){ toast(e.message, 'danger'); }
+}
+async function clearPharmacistFilter(){
+  adminPharmacistFilter = null;
+  adminSalesCache = null;
+  render();
+  try{ await loadAdminSales(); render(); }catch(e){ toast(e.message, 'danger'); }
+}
+
+/* -------------------- تبويب: لوحة تحكم الأدمن -------------------- */
+function tabAdmin(){
+  if(adminSalesCache===null){
+    return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const allSalesSorted = [...adminSalesCache].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+
+  const filterBanner = adminPharmacistFilter ? `
+  <div class="otp-banner" style="margin-bottom:14px;">
+    <span>تعرض فواتير صيدلي محدد (من صفحة الدفعات) — بالقسمين</span>
+    <button class="btn ghost sm" style="flex:0 0 auto;" onclick="clearPharmacistFilter()">عودة للوحة</button>
+  </div>` : '';
+
+  return `
+  ${filterBanner}
+  ${renderReviewQueue()}
+
+  <div class="admin-section">
+    <div class="admin-section-head">
+      <div class="section-title" style="margin:0;">كل عمليات البيع</div>
+      <button class="export-btn" onclick="exportSalesToExcel()">⬇ تصدير Excel</button>
+    </div>
+    ${allSalesSorted.length===0 ? `<div class="empty-state"><div class="ic">🧾</div><div class="t">لا توجد عمليات بيع بعد</div></div>` : `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>الصيدلية</th><th>الصنف</th><th class="num">القطع</th><th>التاريخ</th><th class="num">العمولة (د.أ)</th><th>الحالة</th><th>الفاتورة</th>
+        </tr></thead>
+        <tbody>
+        ${allSalesSorted.map(s=>{
+          const p = s.pharmacist;
+          const isComp = s.saleType && s.saleType!=='NORMAL';
+          return `<tr>
+            <td>${esc(p ? p.pharmacyName : '')}</td><td>${saleItemLabel(s)}</td>
+            <td class="num">${isComp ? '—' : s.quantity}</td><td>${fmtDate(s.saleDate)}</td><td class="num">${isComp ? '—' : fmtMoney(s.commissionAmount)}</td>
+            <td>${statusBadgeHtml(s)}</td>
+            <td>${s.invoiceImageUrl ? `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>` : '—'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>
+  `;
+}
+
+/* -------------------- تبويب: إدارة الأصناف -------------------- */
+function tabCategoriesMgmt(){
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  if(isSuperAdmin && adminDeptFilter===''){
+    return `
+    <div class="section-title">إدارة الأصناف</div>
+    <div class="empty-state">
+      <div class="ic">🗂️</div>
+      <div class="t">اختر قسم محدد لإدارة أصنافه</div>
+      <div class="d">استخدم قائمة "عرض بيانات قسم" بأعلى الصفحة (الأدوية أو الكوزمتك)</div>
+    </div>`;
+  }
+  const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
+  const isCosmetics = dep === 'COSMETICS';
+
+  return `
+  <div class="admin-section">
+    <div class="section-title">إدارة أصناف قسم ${isSuperAdmin ? deptLabel(dep) : ''}</div>
+    ${isCosmetics ? `
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="btn sm ${catMgmtSubTab==='NORMAL'?'':'ghost'}" onclick="switchCatMgmtSubTab('NORMAL')">الأصناف العادية</button>
+      <button class="btn sm ${catMgmtSubTab==='ASIL'?'':'ghost'}" onclick="switchCatMgmtSubTab('ASIL')">أصناف تعويض الأصيل</button>
+      <button class="btn sm ${catMgmtSubTab==='ZAROZA'?'':'ghost'}" onclick="switchCatMgmtSubTab('ZAROZA')">أصناف تعويض زاروزا</button>
+    </div>` : ''}
+    ${(!isCosmetics || catMgmtSubTab==='NORMAL') ? renderNormalCategoriesMgmt() : renderCompensationItemsMgmt(catMgmtSubTab)}
+  </div>
+  `;
+}
+
+function renderNormalCategoriesMgmt(){
+  return `
+  ${CATEGORIES.map(c=>{
+    if(editingCategoryId === c.id){
+      const tierOn = !!editCatTierEnabled[c.id];
+      return `
+      <div class="cat-mgmt-row" style="display:block;">
+        <div class="field" style="margin-top:0;">
+          <label>اسم الصنف</label>
+          <input type="text" id="editCatName_${c.id}" value="${esc(c.name)}">
+        </div>
+        <div class="field">
+          <label>قيمة العمولة لكل قطعة (دينار)</label>
+          <input type="number" id="editCatPrice_${c.id}" min="0" step="0.01" value="${c.commissionPerUnit}">
+        </div>
+        <div class="field" style="margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;" onclick="toggleEditCatTier('${c.id}')">
+            <input type="checkbox" ${tierOn?'checked':''} onclick="event.stopPropagation();toggleEditCatTier('${c.id}')" style="width:auto;">
+            <span>🔼 رفع العمولة تلقائيًا بعد عدد معيّن من المبيعات</span>
+          </label>
+        </div>
+        ${tierOn ? `
+        <div class="field">
+          <label>بعد عدد القطع (لنفس الصيدلي، تراكمي ويتصفّر كل شهر)</label>
+          <input type="number" id="editCatTierCount_${c.id}" min="1" step="1" placeholder="مثال: 50" value="${c.tierThresholdCount || ''}">
+        </div>
+        <div class="field">
+          <label>تصبح العمولة (دينار لكل قطعة)</label>
+          <input type="number" id="editCatTierPrice_${c.id}" min="0" step="0.01" placeholder="مثال: 0.75" value="${c.tierCommissionPerUnit || ''}">
+        </div>` : ''}
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn accent sm" onclick="saveEditCategory('${c.id}')">حفظ</button>
+          <button class="btn ghost sm" onclick="cancelEditCategory()">إلغاء</button>
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="cat-mgmt-row">
+      <div>
+        <div class="n">${esc(c.name)} ${c.isActive===false ? '<span class="badge rejected" style="margin-right:6px;">غير مفعّل</span>' : ''}</div>
+        <div class="p">${fmtMoney(c.commissionPerUnit)} دينار لكل قطعة</div>
+        ${c.tierEnabled ? `<div class="p" style="color:var(--primary-dark);font-weight:700;">🔼 بعد ${c.tierThresholdCount} قطعة بالشهر تصير العمولة ${fmtMoney(c.tierCommissionPerUnit)} دينار</div>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn ghost sm" onclick="startEditCategory('${c.id}')">✏️ تعديل</button>
+        ${c.isActive===false
+          ? `<button class="btn ghost sm" onclick="reactivateCategory('${c.id}')">تفعيل</button>`
+          : `<button class="btn danger sm" onclick="deleteCategory('${c.id}')">حذف</button>`}
+      </div>
+    </div>
+  `;
+  }).join('')}
+  <div class="field" style="margin-top:14px;">
+    <label>اسم الصنف</label>
+    <input type="text" id="newCatName" placeholder="مثال: فيتامين-سي">
+  </div>
+  <div class="field">
+    <label>قيمة العمولة لكل قطعة (دينار)</label>
+    <input type="number" id="newCatPrice" min="0" step="0.01" placeholder="مثال: 1">
+  </div>
+  <div class="field" style="margin-bottom:6px;">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;" onclick="toggleNewCatTier()">
+      <input type="checkbox" ${newCatTierEnabled?'checked':''} onclick="event.stopPropagation();toggleNewCatTier()" style="width:auto;">
+      <span>🔼 رفع العمولة تلقائيًا بعد عدد معيّن من المبيعات (اختياري)</span>
+    </label>
+  </div>
+  ${newCatTierEnabled ? `
+  <div class="field">
+    <label>بعد عدد القطع (لنفس الصيدلي، تراكمي ويتصفّر كل شهر)</label>
+    <input type="number" id="newCatTierCount" min="1" step="1" placeholder="مثال: 50">
+  </div>
+  <div class="field">
+    <label>تصبح العمولة (دينار لكل قطعة)</label>
+    <input type="number" id="newCatTierPrice" min="0" step="0.01" placeholder="مثال: 0.75">
+  </div>` : ''}
+  <button class="btn accent" onclick="addCategory()">إضافة الصنف</button>
+  `;
+}
+
+function toggleNewCatTier(){ newCatTierEnabled = !newCatTierEnabled; render(); }
+
+function startEditCategory(id){
+  editingCategoryId = id;
+  const c = CATEGORIES.find(x=>x.id===id);
+  editCatTierEnabled[id] = !!(c && c.tierEnabled);
+  render();
+}
+function cancelEditCategory(){
+  editingCategoryId = null;
+  render();
+}
+function toggleEditCatTier(id){
+  editCatTierEnabled[id] = !editCatTierEnabled[id];
+  render();
+}
+
+async function saveEditCategory(id){
+  const name = document.getElementById('editCatName_'+id).value.trim();
+  const price = parseFloat(document.getElementById('editCatPrice_'+id).value);
+  if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
+  if(isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
+
+  let payload = { name, commissionPerUnit: price };
+  if(editCatTierEnabled[id]){
+    const tCount = parseInt(document.getElementById('editCatTierCount_'+id).value);
+    const tPrice = parseFloat(document.getElementById('editCatTierPrice_'+id).value);
+    if(isNaN(tCount) || tCount <= 0){ toast('الرجاء إدخال رقم بيعة صحيح لرفع العمولة', 'danger'); return; }
+    if(isNaN(tPrice) || tPrice <= 0){ toast('الرجاء إدخال قيمة عمولة جديدة صحيحة', 'danger'); return; }
+    payload.tierEnabled = true;
+    payload.tierThresholdCount = tCount;
+    payload.tierCommissionPerUnit = tPrice;
+  } else {
+    payload.tierEnabled = false;
+  }
+
+  const dep = currentDepartmentParam();
+  try{
+    await apiRequest('/categories/' + id, { method:'PATCH', json:{ ...payload, ...(dep?{department:dep}:{}) } });
+    toast('تم تحديث الصنف بنجاح');
+    editingCategoryId = null;
+    await loadCategories();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function addCategory(){
+  const name = document.getElementById('newCatName').value.trim();
+  const price = parseFloat(document.getElementById('newCatPrice').value);
+  if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
+  if(isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
+
+  let tierPayload = {};
+  if(newCatTierEnabled){
+    const tCount = parseInt(document.getElementById('newCatTierCount').value);
+    const tPrice = parseFloat(document.getElementById('newCatTierPrice').value);
+    if(isNaN(tCount) || tCount <= 0){ toast('الرجاء إدخال رقم بيعة صحيح لرفع العمولة', 'danger'); return; }
+    if(isNaN(tPrice) || tPrice <= 0){ toast('الرجاء إدخال قيمة عمولة جديدة صحيحة', 'danger'); return; }
+    tierPayload = { tierEnabled:true, tierThresholdCount: tCount, tierCommissionPerUnit: tPrice };
+  }
+
+  const dep = currentDepartmentParam();
+  try{
+    await apiRequest('/categories', { method:'POST', json:{ name, commissionPerUnit: price, ...(dep?{department:dep}:{}), ...tierPayload } });
+    toast('تمت إضافة الصنف');
+    newCatTierEnabled = false;
+    await loadCategories();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function deleteCategory(id){
+  const dep = currentDepartmentParam();
+  try{
+    await apiRequest('/categories/' + id + (dep?('?department='+dep):''), { method:'DELETE' });
+    toast('تم إلغاء تفعيل الصنف');
+    await loadCategories();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function reactivateCategory(id){
+  const dep = currentDepartmentParam();
+  try{
+    await apiRequest('/categories/' + id, { method:'PATCH', json:{ isActive:true, ...(dep?{department:dep}:{}) } });
+    toast('تم تفعيل الصنف');
+    await loadCategories();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+/* -------------------- إدارة أصناف تعويض الأصيل / زاروزا (تبويب فرعي بإدارة الأصناف) -------------------- */
+async function switchCatMgmtSubTab(t){
+  catMgmtSubTab = t;
+  render();
+  if(t !== 'NORMAL' && !compensationItemsCache[t]){
+    try{
+      await loadCompensationItemsAdmin(t);
+      render();
+    }catch(e){ toast(e.message, 'danger'); }
+  }
+}
+
+async function loadCompensationItemsAdmin(type){
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
+  const qs = '?type=' + type + (dep ? ('&department=' + dep) : '');
+  const res = await apiRequest('/compensation-items' + qs);
+  compensationItemsCache[type] = res.data;
+}
+
+function renderCompensationItemsMgmt(type){
+  const items = compensationItemsCache[type];
+  const title = type==='ASIL' ? 'أصناف تعويض الأصيل' : 'أصناف تعويض زاروزا';
+  if(items===null || items===undefined){
+    return `<p style="color:var(--ink-soft);">جارِ تحميل ${title}...</p>`;
+  }
+  return `
+  ${items.length===0 ? `<div class="empty-state"><div class="ic">🗂️</div><div class="t">لا توجد أصناف بعد</div></div>` : ''}
+  ${items.map(c=>`
+    <div class="cat-mgmt-row">
+      <div>
+        <div class="n">${esc(c.name)} ${c.isActive===false ? '<span class="badge rejected" style="margin-right:6px;">غير مفعّل</span>' : ''}</div>
+        <div class="p">${fmtMoney(c.price)} دينار</div>
+      </div>
+      ${c.isActive===false
+        ? `<button class="btn ghost sm" onclick="reactivateCompensationItem('${c.id}','${type}')">تفعيل</button>`
+        : `<button class="btn danger sm" onclick="deleteCompensationItem('${c.id}','${type}')">حذف</button>`}
+    </div>
+  `).join('')}
+  <div class="field" style="margin-top:14px;">
+    <label>اسم الصنف</label>
+    <input type="text" id="newCompItemName_${type}" placeholder="مثال: فيس ميلك">
+  </div>
+  <div class="field">
+    <label>السعر (دينار)</label>
+    <input type="number" id="newCompItemPrice_${type}" min="0" step="0.01" placeholder="مثال: 15">
+  </div>
+  <button class="btn accent" onclick="addCompensationItem('${type}')">إضافة الصنف</button>
+  `;
+}
+
+async function addCompensationItem(type){
+  const name = document.getElementById('newCompItemName_'+type).value.trim();
+  const price = parseFloat(document.getElementById('newCompItemPrice_'+type).value);
+  if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
+  if(isNaN(price) || price <= 0){ toast('الرجاء إدخال سعر صحيح', 'danger'); return; }
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
+  try{
+    await apiRequest('/compensation-items', { method:'POST', json:{ name, price, type, ...(dep?{department:dep}:{}) } });
+    toast('تمت إضافة الصنف');
+    await loadCompensationItemsAdmin(type);
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function deleteCompensationItem(id, type){
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
+  try{
+    await apiRequest('/compensation-items/' + id + (dep?('?department='+dep):''), { method:'DELETE' });
+    toast('تم إلغاء تفعيل الصنف');
+    await loadCompensationItemsAdmin(type);
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+async function reactivateCompensationItem(id, type){
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
+  try{
+    await apiRequest('/compensation-items/' + id, { method:'PATCH', json:{ isActive:true, ...(dep?{department:dep}:{}) } });
+    toast('تم تفعيل الصنف');
+    await loadCompensationItemsAdmin(type);
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+/* -------------------- تبويب: حسابي (تغيير كلمة سر الأدمن) -------------------- */
+function tabAccount(){
+  return `
+  <div class="section-title">حسابي</div>
+  <div class="admin-section">
+    <div style="margin-bottom:14px;font-size:14px;"><b>${esc(currentUser.fullName)}</b> · اسم المستخدم: <span class="num">${esc(currentUser.username)}</span></div>
+    <div class="section-title" style="font-size:15px;">تغيير كلمة السر</div>
+    ${accountMsg ? `<div class="otp-banner" style="margin-bottom:12px;"><span>${esc(accountMsg)}</span></div>` : ''}
+    <div class="field"><label>كلمة السر الحالية</label><input type="password" id="accCurPass" autocomplete="current-password"></div>
+    <div class="field"><label>كلمة السر الجديدة</label><input type="password" id="accNewPass" autocomplete="new-password" placeholder="10 أحرف على الأقل، فيها حرف إنجليزي ورقم"></div>
+    <div class="field"><label>تأكيد كلمة السر الجديدة</label><input type="password" id="accNewPass2" autocomplete="new-password"></div>
+    <button class="btn" id="accSaveBtn" onclick="submitAdminPasswordChange()">حفظ كلمة السر</button>
+    <p style="color:var(--ink-soft);font-size:12.5px;line-height:1.7;margin-top:12px;">بعد التغيير بتنتهي كل الجلسات القديمة لهذا الحساب على أي جهاز آخر.</p>
+  </div>`;
+}
+
+async function submitAdminPasswordChange(){
+  const cur = document.getElementById('accCurPass').value;
+  const n1 = document.getElementById('accNewPass').value;
+  const n2 = document.getElementById('accNewPass2').value;
+  if(!cur){ toast('أدخل كلمة السر الحالية', 'danger'); return; }
+  if(n1.length < 10 || !/[A-Za-z]/.test(n1) || !/[0-9]/.test(n1)){ toast('كلمة السر الجديدة: 10 أحرف على الأقل وفيها حرف إنجليزي ورقم', 'danger'); return; }
+  if(n1 !== n2){ toast('كلمتا السر غير متطابقتين', 'danger'); return; }
+  const btn = document.getElementById('accSaveBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
+  try{
+    const res = await apiRequest('/auth/admin/change-password', { method:'POST', json:{ currentPassword: cur, newPassword: n1 } });
+    // السيرفر بيلغي الجلسات القديمة ويرجّع توكن جديد للجلسة الحالية
+    token = res.data.token;
+    localStorage.setItem('mm_token', token);
+    accountMsg = 'تم تغيير كلمة السر بنجاح ✓';
+    toast('تم تغيير كلمة السر بنجاح');
+    render();
+  }catch(e){
+    toast(e.message, 'danger');
+    if(btn){ btn.disabled = false; btn.textContent = 'حفظ كلمة السر'; }
+  }
+}
+
+/* -------------------- تبويب: العملاء المسجلون -------------------- */
+function tabPharmacists(){
+  return `
+  <div class="section-title">العملاء المسجلون حسب المنطقة</div>
+  <div class="admin-section">
+    <select id="statsCity">
+      <option value="" ${statsFilter.city===''?'selected':''}>كل المناطق</option>
+      ${JORDAN_CITIES.map(c=>`<option value="${c}" ${statsFilter.city===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <button class="btn" style="margin-top:10px;" onclick="runStatsFilter()">عرض</button>
+
+    ${statsFilterActive ? renderStatsResults() : ''}
+  </div>
+  `;
+}
+
+function runStatsFilter(){
+  statsFilter.city = document.getElementById('statsCity').value;
+  statsFilterActive = true;
+  render();
+}
+
+function renderStatsResults(){
+  const list = (pharmacistsCache||[]).filter(u => statsFilter.city==='' || u.city===statsFilter.city);
+  const label = statsFilter.city || 'كل المناطق';
+
+  return `
+  <div style="margin-top:16px;">
+    <div class="stat-grid one">
+      <div class="stat-card"><div class="v num">${list.length}</div><div class="l">عميل مسجّل — ${label}</div></div>
+    </div>
+    ${list.length===0 ? `<div class="empty-state"><div class="ic">👤</div><div class="t">لا يوجد صيادلة مسجّلون</div><div class="d">في ${label}</div></div>` : `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>الاسم</th><th>رقم الهاتف</th><th>الصيدلية</th><th>المدينة</th><th>المنطقة</th><th>الحالة</th></tr></thead>
+        <tbody>
+        ${list.map(u=>`<tr>
+          <td>${esc(u.fullName)}</td><td class="num">${esc(u.phoneNumber)}</td><td>${esc(u.pharmacyName)}</td><td>${esc(u.city)}</td><td>${esc(u.region)}</td>
+          <td>
+            ${u.isActive ? `<span class="badge ok">مفعّل</span>` : `<span class="badge rejected">موقوف</span>`}
+            <button class="btn ${u.isActive?'danger':'approve'} sm" style="margin-right:6px;" onclick="togglePharmacistActive('${u.id}', ${!u.isActive})">${u.isActive?'إيقاف':'تفعيل'}</button>
+          </td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+}
+
+async function togglePharmacistActive(id, makeActive){
+  try{
+    await apiRequest('/users/pharmacists/' + id + '/active', { method:'PATCH', json:{ isActive: makeActive } });
+    toast(makeActive ? 'تم تفعيل الحساب' : 'تم إيقاف الحساب');
+    await loadPharmacists();
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+/* -------------------- تبويب: الدفعات الشهرية -------------------- */
+// يبني تاريخ YYYY-MM-DD من التوقيت المحلي مباشرة (بدون المرور بـ toISOString/UTC)
+// عشان نتجنب مشكلة انزياح يوم كامل لأي مستخدم بتوقيت شرق غرينتش (زي الأردن +3)
+function toLocalDateStr(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function tabPayouts(){
+  const d = payoutsData;
+  if(!d){
+    return `<div class="section-title">الدفعات الشهرية</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const t = d.totals;
+  const warn = t.pendingInvoices > 0 ? `
+  <div class="dup-warning" style="font-size:14px;line-height:1.8;padding:14px;margin-bottom:14px;">
+    ⚠️ <b>تنبيه:</b> في <b>${t.pendingInvoices}</b> فاتورة لسا معلّقة (بانتظار مراجعتك) عند <b>${t.pharmacistsWithPending}</b> صيدلي من هذا الشهر أو أقدم.
+    راجعها قبل التحويل، لأن أي فاتورة بتنقبل بعد ما تأكد التحويل لصيدليها بتروح تلقائيًا لدفعة الشهر اللي بعده.
+    <br>(دوس على "مراجعة الفواتير" جنب الصيدلي لتشوف فواتيره بالقسمين.)
+  </div>` : '';
+  const closedNote = d.isClosed ? '' : `
+  <div class="dup-warning" style="margin-bottom:14px;">🕒 هذا الشهر لسا ما انتهى (ينتهي 11:59 مساءً آخر يوم بتوقيت الأردن) — الأرقام لسا بتتغيّر ولا يمكن تأكيد التحويل الآن.</div>`;
+
+  return `
+  <div class="admin-section-head">
+    <div class="section-title" style="margin:0;">الدفعات الشهرية للصيادلة</div>
+    ${d.rows.length ? `<button class="export-btn" onclick="exportPayoutsToExcel()">⬇ تصدير Excel</button>` : ''}
+  </div>
+  <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 14px;line-height:1.7;">
+    مجموع العمولات المقبولة لكل صيدلي عن هذا الشهر (فواتير أُرسلت قبل نهاية الشهر بتوقيت الأردن)، بالقسمين. الفواتير المرسلة من 1 الشهر التالي بتروح تلقائيًا للدفعة اللي بعدها.
+  </p>
+
+  <div class="admin-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
+      <button class="btn ghost sm" style="flex:0 0 auto;" onclick="changePayoutsMonth(-1)">‹ الشهر السابق</button>
+      <div style="text-align:center;font-weight:800;font-size:16px;">${fmtMonth(d.month)}</div>
+      <button class="btn ghost sm" style="flex:0 0 auto;" onclick="changePayoutsMonth(1)">الشهر التالي ›</button>
+    </div>
+
+    ${warn}
+    ${closedNote}
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="v num">${fmtMoney(t.unpaidAmount)}</div><div class="l">المطلوب تحويله (د.أ)</div></div>
+      <div class="stat-card"><div class="v num">${t.unpaidCount}</div><div class="l">صيدلي بانتظار التحويل</div></div>
+      <div class="stat-card"><div class="v num">${fmtMoney(t.paidAmount)}</div><div class="l">تم تحويله (د.أ) — ${t.paidCount} صيدلي</div></div>
+    </div>
+
+    ${d.rows.length===0 ? `<div class="empty-state"><div class="ic">💰</div><div class="t">لا توجد مستحقات لهذا الشهر</div></div>` : `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>الصيدلاني / الصيدلية</th><th class="num">المبلغ (د.أ)</th><th>الاستلام</th><th>تنبيهات</th><th>الحالة / الإجراء</th>
+        </tr></thead>
+        <tbody>
+        ${d.rows.map(r=>renderPayoutRow(r, d)).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+}
+
+function renderPayoutRow(r, d){
+  const alerts = [];
+  if(r.pendingCount > 0 && r.status !== 'PAID'){
+    alerts.push(`<div class="dup-warning" style="margin:0 0 6px;padding:6px 8px;">⚠️ ${r.pendingCount} فاتورة معلّقة <button class="btn sm" style="padding:3px 8px;margin-right:4px;" onclick="reviewPharmacist('${r.pharmacistId}')">مراجعة الفواتير</button></div>`);
+  }
+  if(r.lateSalesCount > 0){
+    alerts.push(`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;">منها ${r.lateSalesCount} متأخرة من أشهر سابقة (${fmtMoney(r.lateAmount)} د.أ)</div>`);
+  }
+  if(r.payoutInfoChangedRecently){
+    alerts.push(`<div style="font-size:12px;color:var(--danger);font-weight:700;margin-bottom:4px;">🔔 تغيّرت بيانات الاستلام مؤخرًا — تأكد منها</div>`);
+  }
+  if(r.status==='PAID' && r.carriedOverCount > 0){
+    alerts.push(`<div style="font-size:12px;color:var(--ink-soft);">+ ${r.carriedOverCount} عملية (${fmtMoney(r.carriedOverAmount)} د.أ) انقبلت بعد الدفعة — بتروح للشهر اللي بعده</div>`);
+  }
+  if(!r.isActive){
+    alerts.push(`<div style="font-size:12px;color:var(--danger);">الحساب موقوف</div>`);
+  }
+
+  let action = '—';
+  if(r.status === 'PAID'){
+    const p = r.payout;
+    action = `<span class="badge ok">✓ تم التحويل</span><div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">${fmtDate(p.paidAt)}${p.reference ? ' · مرجع: ' + esc(p.reference) : ''}</div>`;
+  } else if(r.status === 'UNPAID'){
+    action = d.isClosed
+      ? `<button class="btn approve sm" onclick="startConfirmPayout('${r.pharmacistId}')">✓ تأكيد التحويل</button>`
+      : `<span class="badge pending">بانتظار انتهاء الشهر</span>`;
+  } else {
+    action = `<span style="color:var(--ink-soft);font-size:12.5px;">لا مستحقات</span>`;
+  }
+
+  const split = (r.medicineAmount>0 || r.cosmeticsAmount>0)
+    ? `<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">أدوية ${fmtMoney(r.medicineAmount)} · كوزمتك ${fmtMoney(r.cosmeticsAmount)}</div>` : '';
+
+  const row = `<tr>
+    <td><b>${esc(r.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(r.pharmacyName)} · <span class="num">${esc(r.phoneNumber)}</span></div></td>
+    <td class="num"><b>${fmtMoney(r.amount)}</b>${split}<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">${r.salesCount} عملية</div></td>
+    <td>${r.payoutValue ? `${payoutTypeLabel(r.payoutType)}<div class="num" style="font-weight:700;">${esc(r.payoutValue)}</div>` : `<span style="color:var(--danger);font-size:12.5px;">لم يدخل بيانات الاستلام</span>`}</td>
+    <td>${alerts.join('') || '—'}</td>
+    <td>${action}</td>
+  </tr>`;
+
+  if(confirmingPayoutId !== r.pharmacistId) return row;
+
+  const noInfo = !r.payoutValue;
+  return row + `<tr><td colspan="5" style="background:var(--accent-tint);">
+    <div style="padding:6px 4px;line-height:1.9;">
+      <div style="font-weight:800;margin-bottom:6px;">تأكيد تحويل ${fmtMonth(d.month)}</div>
+      <div>الصيدلاني: <b>${esc(r.fullName)}</b> — ${esc(r.pharmacyName)}</div>
+      <div>المبلغ المطلوب تحويله: <b class="num" style="font-size:17px;">${fmtMoney(r.amount)} د.أ</b> (${r.salesCount} عملية)</div>
+      <div>${payoutTypeLabel(r.payoutType)}: <b class="num">${esc(r.payoutValue || '—')}</b></div>
+      ${r.pendingCount>0 ? `<div class="dup-warning" style="margin:8px 0;">⚠️ عند هذا الصيدلي ${r.pendingCount} فاتورة معلّقة لسا ما انراجعت. لو أكدت الآن وانقبلت بعدين، بتنحسب بدفعة الشهر اللي بعده.</div>` : ''}
+      ${noInfo ? `<div class="dup-warning" style="margin:8px 0;">لا يمكن التأكيد: الصيدلي لم يدخل بيانات استلام المستحقات.</div>` : ''}
+      <div class="field" style="margin:8px 0;">
+        <label>رقم عملية التحويل (اختياري)</label>
+        <input type="text" id="payoutRef_${r.pharmacistId}" maxlength="100" placeholder="رقم العملية من تطبيق البنك">
+      </div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;">حوّل المبلغ من تطبيق البنك أولًا، وبعدها اضغط "نعم، تم التحويل" لتسجيله.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn approve sm" ${noInfo?'disabled':''} onclick="confirmPayout('${r.pharmacistId}')">نعم، تم التحويل</button>
+        <button class="btn ghost sm" onclick="cancelConfirmPayout()">إلغاء</button>
+      </div>
+    </div>
+  </td></tr>`;
+}
+
+async function changePayoutsMonth(delta){
+  const cur = payoutsData ? payoutsData.month : shiftMonthKey(currentMonthKey(), -1);
+  payoutsMonth = shiftMonthKey(cur, delta);
+  payoutsData = null; confirmingPayoutId = null;
+  render();
+  try{ await loadPayouts(); render(); }catch(e){ toast(e.message, 'danger'); }
+}
+function startConfirmPayout(id){ confirmingPayoutId = id; render(); }
+function cancelConfirmPayout(){ confirmingPayoutId = null; render(); }
+
+async function confirmPayout(pharmacistId){
+  if(!payoutsData) return;
+  const r = payoutsData.rows.find(x=>x.pharmacistId===pharmacistId);
+  if(!r) return;
+  const refEl = document.getElementById('payoutRef_'+pharmacistId);
+  const reference = refEl ? refEl.value.trim() : '';
+  try{
+    await apiRequest('/payouts/confirm', { method:'POST', json:{
+      pharmacistId,
+      month: payoutsData.month,
+      expectedAmount: Number(r.amount),
+      expectedSalesCount: r.salesCount,
+      ...(reference ? { reference } : {})
+    }});
+    toast('تم تسجيل الدفعة بنجاح ✓');
+    confirmingPayoutId = null;
+    await loadPayouts();
+    render();
+  }catch(e){
+    toast(e.message, 'danger');
+    if(e.code === 'AMOUNT_CHANGED' || e.code === 'ALREADY_PAID'){
+      confirmingPayoutId = null;
+      try{ await loadPayouts(); render(); }catch(_e){}
+    }
+  }
+}
+
+function exportPayoutsToExcel(){
+  if(!payoutsData || payoutsData.rows.length===0){ toast('لا توجد بيانات لتصديرها', 'danger'); return; }
+  const data = payoutsData.rows.map(r=>({
+    'اسم الصيدلاني': r.fullName,
+    'رقم الهاتف': r.phoneNumber,
+    'اسم الصيدلية': r.pharmacyName,
+    'المبلغ (دينار)': Number(Number(r.amount).toFixed(3)),
+    'أدوية': Number(Number(r.medicineAmount).toFixed(3)),
+    'كوزمتك': Number(Number(r.cosmeticsAmount).toFixed(3)),
+    'نوع الاستلام': payoutTypeLabel(r.payoutType),
+    'الاسم المستعار / رقم الهاتف': r.payoutValue || '',
+    'فواتير معلّقة': r.pendingCount,
+    'الحالة': r.status==='PAID' ? 'تم التحويل' : (r.status==='UNPAID' ? 'بانتظار التحويل' : 'لا مستحقات')
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:20},{wch:14},{wch:22},{wch:14},{wch:12},{wch:12},{wch:14},{wch:24},{wch:12},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'الدفعات');
+  XLSX.writeFile(wb, `دفعات-${payoutsData.month}.xlsx`);
+  toast('تم تصدير ملف Excel');
+}
+
+/* -------------------- تبويب: التقارير -------------------- */
+function tabReports(){
+  return `
+  <div class="section-title">تقارير العمولات</div>
+  <div class="admin-section">
+    <div class="section-title">العمولات المؤكدة حسب المنطقة والمدى الزمني</div>
+    <div class="field">
+      <label>المنطقة</label>
+      <select id="filterCity">
+        <option value="" ${adminFilter.city===''?'selected':''}>كل المناطق</option>
+        ${JORDAN_CITIES.map(c=>`<option value="${c}" ${adminFilter.city===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>من تاريخ</label>
+        <input type="date" id="filterFromDate" value="${adminFilter.fromDate}">
+      </div>
+      <div class="field">
+        <label>إلى تاريخ</label>
+        <input type="date" id="filterToDate" value="${adminFilter.toDate}">
+      </div>
+    </div>
+    <button class="btn" onclick="runRegionFilter()">عرض التقرير</button>
+
+    ${adminFilterActive ? renderRegionFilterResults() : ''}
+  </div>
+  `;
+}
+
+async function runRegionFilter(){
+  adminFilter.city = document.getElementById('filterCity').value;
+  adminFilter.fromDate = document.getElementById('filterFromDate').value;
+  adminFilter.toDate = document.getElementById('filterToDate').value;
+  const dep = currentDepartmentParam();
+  const depQs = dep ? ('&department='+dep) : '';
+  try{
+    const [salesRes, pharmRes] = await Promise.all([
+      apiRequest('/sales?status=APPROVED&saleType=NORMAL&pageSize=500' + depQs),
+      apiRequest('/users/pharmacists')
+    ]);
+    const cityById = {};
+    pharmRes.data.forEach(p=>{ cityById[p.id] = p.city; });
+    const fromD = adminFilter.fromDate, toD = adminFilter.toDate;
+    reportsRows = salesRes.data.items.filter(s=>{
+      const saleDay = toDateInputValue(s.saleDate);
+      if(saleDay < fromD || saleDay > toD) return false;
+      const city = cityById[s.pharmacistId];
+      if(adminFilter.city !== '' && city !== adminFilter.city) return false;
+      return true;
+    }).map(s=> ({...s, _city: cityById[s.pharmacistId] || ''}))
+      .sort((a,b)=> a.saleDate===b.saleDate ? new Date(a.createdAt)-new Date(b.createdAt) : String(a.saleDate).localeCompare(String(b.saleDate)));
+    adminFilterActive = true;
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+function renderRegionFilterResults(){
+  const approvedResults = reportsRows;
+  const total = approvedResults.reduce((a,s)=>a+Number(s.commissionAmount),0);
+  const distinctPharmacies = new Set(approvedResults.map(s=>s.pharmacistId)).size;
+  const label = adminFilter.city || 'كل المناطق';
+
+  return `
+  <div style="margin-top:16px;">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="v num">${approvedResults.length}</div><div class="l">عمولة مؤكدة</div></div>
+      <div class="stat-card"><div class="v num">${distinctPharmacies}</div><div class="l">صيدلية فعّالة</div></div>
+      <div class="stat-card"><div class="v num">${fmtMoney(total)}</div><div class="l">إجمالي العمولات (د.أ)</div></div>
+    </div>
+    ${approvedResults.length===0 ? `<div class="empty-state"><div class="ic">🔎</div><div class="t">لا توجد عمولات مؤكدة</div><div class="d">في ${label} بين ${fmtDate(adminFilter.fromDate)} و${fmtDate(adminFilter.toDate)}</div></div>` : `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>الصيدلية</th><th>المنطقة</th><th>الصنف</th><th class="num">القطع</th><th class="num">العمولة (د.أ)</th><th>التاريخ</th><th>الحالة</th><th>الفاتورة</th></tr></thead>
+        <tbody>
+        ${approvedResults.map((s,i)=>{
+          const p = s.pharmacist;
+          return `<tr><td class="num">${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city)}</td><td>${saleItemLabel(s)}</td><td class="num">${s.quantity}</td><td class="num">${fmtMoney(s.commissionAmount)}</td><td>${fmtDate(s.saleDate)}</td><td>${statusBadgeHtml(s)}</td><td>${s.invoiceImageUrl ? `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>` : '—'}</td></tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+}
+
+// نسخة نصية بدون HTML من saleItemLabel، لاستخدامها بملفات Excel المصدَّرة
+function saleItemLabelPlain(s){
+  const type = s.saleType || 'NORMAL';
+  if(type === 'ASIL' || type === 'ZAROZA'){
+    const mainName = s.compensationItem ? s.compensationItem.name : '—';
+    const freeName = s.freeCompensationItem ? s.freeCompensationItem.name : '—';
+    return `${mainName} (فري: ${freeName})`;
+  }
+  return s.category ? s.category.name : '';
+}
+
+/* -------------------- تبويبات: تقارير تعويض الأصيل / زاروزا -------------------- */
+function compReportTitle(type){ return type==='ASIL' ? 'تعويض الأصيل' : 'تعويض زاروزا'; }
+
+function tabCompReports(type){
+  const f = compReportsFilter[type];
+  const pharmacists = (pharmacistsCache||[]).slice().sort((a,b)=> (a.pharmacyName||'').localeCompare(b.pharmacyName||'', 'ar'));
+  return `
+  <div class="section-title">تقارير ${compReportTitle(type)}</div>
+  <div class="admin-section">
+    <div class="section-title">فواتير ${compReportTitle(type)} حسب المنطقة/الصيدلية والمدى الزمني</div>
+    <div class="field">
+      <label>المنطقة</label>
+      <select id="compFilterCity_${type}">
+        <option value="" ${f.city===''?'selected':''}>كل المناطق</option>
+        ${JORDAN_CITIES.map(c=>`<option value="${c}" ${f.city===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>الصيدلية</label>
+      <select id="compFilterPharmacist_${type}">
+        <option value="" ${f.pharmacistId===''?'selected':''}>كل الصيدليات</option>
+        ${pharmacists.map(p=>`<option value="${p.id}" ${f.pharmacistId===p.id?'selected':''}>${esc(p.pharmacyName)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>من تاريخ</label>
+        <input type="date" id="compFilterFromDate_${type}" value="${f.fromDate}">
+      </div>
+      <div class="field">
+        <label>إلى تاريخ</label>
+        <input type="date" id="compFilterToDate_${type}" value="${f.toDate}">
+      </div>
+    </div>
+    <button class="btn" onclick="runCompReportFilter('${type}')">عرض التقرير</button>
+
+    ${compReportsActive[type] ? renderCompReportResults(type) : ''}
+  </div>
+  `;
+}
+
+async function runCompReportFilter(type){
+  const f = compReportsFilter[type];
+  f.city = document.getElementById('compFilterCity_'+type).value;
+  f.pharmacistId = document.getElementById('compFilterPharmacist_'+type).value;
+  f.fromDate = document.getElementById('compFilterFromDate_'+type).value;
+  f.toDate = document.getElementById('compFilterToDate_'+type).value;
+  try{
+    const [salesRes, pharmRes] = await Promise.all([
+      apiRequest('/sales?status=APPROVED&saleType=' + type + '&department=COSMETICS&pageSize=500'),
+      pharmacistsCache ? Promise.resolve({data:pharmacistsCache}) : apiRequest('/users/pharmacists')
+    ]);
+    pharmacistsCache = pharmRes.data;
+    const cityById = {};
+    pharmacistsCache.forEach(p=>{ cityById[p.id] = p.city; });
+    const fromD = f.fromDate, toD = f.toDate;
+    compReportsRows[type] = salesRes.data.items.filter(s=>{
+      const saleDay = toDateInputValue(s.saleDate);
+      if(saleDay < fromD || saleDay > toD) return false;
+      const city = cityById[s.pharmacistId];
+      if(f.city !== '' && city !== f.city) return false;
+      if(f.pharmacistId !== '' && s.pharmacistId !== f.pharmacistId) return false;
+      return true;
+    }).map(s=> ({...s, _city: cityById[s.pharmacistId] || ''}))
+      .sort((a,b)=> a.saleDate===b.saleDate ? new Date(a.createdAt)-new Date(b.createdAt) : String(a.saleDate).localeCompare(String(b.saleDate)));
+    compReportsActive[type] = true;
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+function renderCompReportResults(type){
+  const rows = compReportsRows[type] || [];
+  const f = compReportsFilter[type];
+  const distinctPharmacies = new Set(rows.map(s=>s.pharmacistId)).size;
+  const label = f.city || 'كل المناطق';
+
+  return `
+  <div style="margin-top:16px;">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="v num">${rows.length}</div><div class="l">فاتورة تعويض مؤكدة</div></div>
+      <div class="stat-card"><div class="v num">${distinctPharmacies}</div><div class="l">صيدلية فعّالة</div></div>
+    </div>
+    ${rows.length===0 ? `<div class="empty-state"><div class="ic">🔎</div><div class="t">لا توجد فواتير مؤكدة</div><div class="d">في ${label} بين ${fmtDate(f.fromDate)} و${fmtDate(f.toDate)}</div></div>` : `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
+      <button class="export-btn" onclick="exportCompDetailedExcel('${type}')">⬇ تصدير تفصيلي Excel</button>
+      <button class="export-btn" onclick="printCompFreeItemsPDF('${type}')">🖨️ تصدير PDF لكل صيدلية</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>الصيدلية</th><th>المنطقة</th><th>الصنف الأساسي</th><th>الصنف الفري</th><th>التاريخ</th><th>الحالة</th><th>الفاتورة</th></tr></thead>
+        <tbody>
+        ${rows.map((s,i)=>{
+          const p = s.pharmacist;
+          return `<tr><td class="num">${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city)}</td><td>${s.compensationItem?esc(s.compensationItem.name):''}</td><td>${s.freeCompensationItem?esc(s.freeCompensationItem.name):''}</td><td>${fmtDate(s.saleDate)}</td><td>${statusBadgeHtml(s)}</td><td>${s.invoiceImageUrl ? `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>` : '—'}</td></tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+}
+
+function exportCompDetailedExcel(type){
+  const rows = compReportsRows[type] || [];
+  if(rows.length===0){ toast('لا توجد فواتير لتصديرها', 'danger'); return; }
+  const data = rows.map((s,i)=>{
+    const p = s.pharmacist;
+    return {
+      '#': i+1,
+      'اسم الصيدلية': p ? p.pharmacyName : '',
+      'صاحب الحساب': p ? p.fullName : '',
+      'رقم الهاتف': p ? p.phoneNumber : '',
+      'المنطقة': s._city,
+      'الصنف الأساسي': s.compensationItem ? s.compensationItem.name : '',
+      'الصنف الفري': s.freeCompensationItem ? s.freeCompensationItem.name : '',
+      'تاريخ البيع': toDateInputValue(s.saleDate),
+      'الحالة': 'مقبولة'
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:5},{wch:22},{wch:18},{wch:14},{wch:16},{wch:22},{wch:22},{wch:14},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, compReportTitle(type));
+  XLSX.writeFile(wb, `تفصيلي-${compReportTitle(type)}-${toDateInputValue(new Date())}.xlsx`);
+  toast('تم تصدير الملف التفصيلي');
+}
+
+// يجمّع القطع الفري (قطع التعويض) المستحقة، مقسّمة حسب كل صيدلية لحالها
+function computeFreeItemsByPharmacy(rows){
+  const byPharm = {};
+  rows.forEach(s=>{
+    if(!s.freeCompensationItem) return;
+    const pid = s.pharmacistId;
+    const pname = s.pharmacist ? s.pharmacist.pharmacyName : 'غير معروف';
+    if(!byPharm[pid]) byPharm[pid] = { pharmacyName: pname, items: {}, total: 0 };
+    const iname = s.freeCompensationItem.name;
+    byPharm[pid].items[iname] = (byPharm[pid].items[iname]||0) + 1;
+    byPharm[pid].total += 1;
+  });
+  return Object.values(byPharm)
+    .map(p=>({
+      pharmacyName: p.pharmacyName,
+      total: p.total,
+      items: Object.entries(p.items).map(([name,count])=>({name,count})).sort((a,b)=>a.name.localeCompare(b.name,'ar'))
+    }))
+    .sort((a,b)=> a.pharmacyName.localeCompare(b.pharmacyName,'ar'));
+}
+
+// تصدير PDF: بيفتح نافذة طباعة منسّقة، كل صيدلية بصفحة منفصلة، وبيطلع مربع طباعة المتصفح
+// (اختر "حفظ كـ PDF" من قائمة الطابعة) — هاي الطريقة أضمن لعرض العربي صح من مكتبات PDF المباشرة
+function printCompFreeItemsPDF(type){
+  const rows = compReportsRows[type] || [];
+  if(rows.length===0){ toast('لا توجد فواتير لتصديرها', 'danger'); return; }
+  const byPharmacy = computeFreeItemsByPharmacy(rows);
+  if(byPharmacy.length===0){ toast('لا توجد قطع فري لتصديرها', 'danger'); return; }
+
+  const dateLabel = fmtDate(new Date());
+  const pagesHtml = byPharmacy.map(p=>`
+    <div class="pdf-page">
+      <div class="pdf-header">
+        <div class="pdf-title">${compReportTitle(type)} — القطع الواجب تعويضها</div>
+        <div class="pdf-pharmacy">${esc(p.pharmacyName)}</div>
+        <div class="pdf-date">تاريخ التصدير: ${dateLabel}</div>
+      </div>
+      <table class="pdf-table">
+        <thead><tr><th>#</th><th>الصنف (القطعة الفري)</th><th>عدد القطع المستحقة</th></tr></thead>
+        <tbody>
+          ${p.items.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.name)}</td><td>${it.count}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr><td colspan="2">الإجمالي</td><td>${p.total}</td></tr></tfoot>
+      </table>
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>القطع الواجب تعويضها - ${compReportTitle(type)}</title>
+<style>
+  body{ font-family:'Segoe UI', Tahoma, Arial, sans-serif; margin:0; padding:0; color:#1a1a1a; }
+  .pdf-page{ padding:36px 40px; page-break-after: always; }
+  .pdf-page:last-child{ page-break-after: auto; }
+  .pdf-header{ margin-bottom:22px; border-bottom:3px solid #1D6F3E; padding-bottom:14px; }
+  .pdf-title{ font-size:15px; color:#555; margin-bottom:4px; }
+  .pdf-pharmacy{ font-size:26px; font-weight:800; color:#1D6F3E; }
+  .pdf-date{ font-size:12px; color:#888; margin-top:6px; }
+  .pdf-table{ width:100%; border-collapse:collapse; }
+  .pdf-table th, .pdf-table td{ border:1px solid #ddd; padding:10px 12px; text-align:right; font-size:14px; }
+  .pdf-table th{ background:#E9F5EF; color:#1D6F3E; font-weight:800; }
+  .pdf-table tfoot td{ font-weight:800; background:#F7F7F7; }
+  @media print{ .pdf-page{ padding:24px 30px; } }
+</style>
+</head>
+<body onload="window.print()">
+${pagesHtml}
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ toast('الرجاء السماح بالنوافذ المنبثقة (Popups) لهذا الموقع', 'danger'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+/* -------------------- تصدير Excel لكل عمليات البيع -------------------- */
+function exportSalesToExcel(){
+  const sales = adminSalesCache || [];
+  if(sales.length===0){ toast('لا توجد عمليات بيع لتصديرها', 'danger'); return; }
+  const statusLabel = s => s.status==='APPROVED' ? 'مقبولة' : s.status==='REJECTED' ? 'مرفوضة' : 'قيد المراجعة';
+  const rows = [...sales].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)).map(s=>{
+    const p = s.pharmacist;
+    const isComp = s.saleType && s.saleType!=='NORMAL';
+    return {
+      'اسم الصيدلية': p ? p.pharmacyName : '',
+      'صاحب الحساب': p ? p.fullName : '',
+      'رقم الهاتف': p ? p.phoneNumber : '',
+      'نوع العملية': saleModeLabel(s.saleType || 'NORMAL'),
+      'الصنف': saleItemLabelPlain(s),
+      'عدد القطع': isComp ? '—' : s.quantity,
+      'تاريخ البيع': toDateInputValue(s.saleDate),
+      'قيمة العمولة (دينار)': isComp ? '—' : Number(Number(s.commissionAmount).toFixed(3)),
+      'الحالة': statusLabel(s),
+      'سبب الرفض': s.rejectionReason || ''
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:22},{wch:18},{wch:14},{wch:16},{wch:26},{wch:10},{wch:14},{wch:18},{wch:14},{wch:22}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'عمليات البيع');
+  XLSX.writeFile(wb, 'مبيعات-مستودع-مسروجي.xlsx');
+  toast('تم تصدير ملف Excel');
+}
+
+/* ---------------- init ---------------- */
+(async function init(){
+  // لو دخل الصيدلي عبر رابط إحالة (?ref=CODE)، نحفظ الكود لنعبّيه تلقائيًا بخطوة التسجيل
+  try{
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    // كود الإحالة: نقبل فقط حروف وأرقام (يمنع أي محاولة حقن من الرابط)
+    if(ref && /^[A-Za-z0-9]{4,12}$/.test(ref.trim())) incomingReferralCode = ref.trim().toUpperCase();
+  }catch(e){}
+
+  document.getElementById('app').innerHTML = `<div class="center-wrap"><div style="color:var(--ink-soft);">جارِ التحميل...</div></div>`;
+  if(token){
+    try{
+      await loadMe();
+      clearAllCaches();
+      if(currentUser.type === 'admin'){
+        // الأدمن: شاشة اختيار اللوحة (أدوية / كوزمتك) أول شي
+        adminPanelChosen = false; adminDeptFilter = '';
+        activeTab = 'admin';
+        render();
+      } else {
+        activeTab = 'add';
+        render(); // بيعرض شاشة اختيار القسم تلقائيًا إذا selectedDepartment فاضي
+      }
+      return;
+    }catch(e){
+      token = null; currentUser = null;
+      localStorage.removeItem('mm_token');
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
