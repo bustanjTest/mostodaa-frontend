@@ -463,6 +463,7 @@ let statsFilterActive = false;
 // الدفعات الشهرية (أدمن)
 let payoutsData = null;        // رد GET /payouts
 let payoutsMonth = '';         // YYYY-MM ('' = الافتراضي: الشهر الماضي)
+let previousDuesCache = null;  // رد GET /payouts/me (تبويب: مستحقاتي السابقة)
 let confirmingPayoutId = null; // الصيدلي اللي بنأكد تحويله حاليًا
 let accountMsg = null;         // رسالة تبويب الحساب (تغيير كلمة السر)
 
@@ -1209,7 +1210,7 @@ function clearAllCaches(){
   historyFilterType = null; showFreeItemsSummary = false; referralSummaryCache = null;
   adminFilterActive = false; statsFilterActive = false;
   payoutsData = null; payoutsMonth = ''; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
-  adminPharmacistFilter = null;
+  adminPharmacistFilter = null; previousDuesCache = null;
   compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
   compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
   compReportsRows = { ASIL: null, ZAROZA: null }; compReportsActive = { ASIL:false, ZAROZA:false };
@@ -1278,6 +1279,7 @@ function screenAppShell(){
     ${activeTab==='history' ? tabHistory() : ''}
     ${activeTab==='payoutInfo' ? tabPayoutInfo() : ''}
     ${activeTab==='earnings' ? tabEarnings() : ''}
+    ${activeTab==='previousDues' ? tabPreviousDues() : ''}
     ${activeTab==='referral' ? tabReferral() : ''}
     ${activeTab==='reports' ? tabReports() : ''}
     ${activeTab==='compReportsAsil' ? tabCompReports('ASIL') : ''}
@@ -1294,6 +1296,7 @@ function screenAppShell(){
       ${!isAdmin ? `<button class="${activeTab==='history'?'active':''}" onclick="switchTab('history')"><span class="ic">🧾</span>السجل</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='payoutInfo'?'active':''}" onclick="switchTab('payoutInfo')"><span class="ic">💳</span>بيانات الاستلام</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='earnings'?'active':''}" onclick="switchTab('earnings')"><span class="ic">💰</span>مستحقاتي</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>مستحقاتي السابقة</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
@@ -1335,6 +1338,7 @@ async function loadTabData(tab){
     if(tab==='history'){ await loadMySales(); render(); }
     if(tab==='payoutInfo'){ await loadMySales(); render(); }
     if(tab==='earnings'){ await loadMySales(); render(); }
+    if(tab==='previousDues'){ await loadPreviousDues(); render(); }
     if(tab==='referral'){ await loadReferralSummary(); render(); }
     if(tab==='admin'){ await loadAdminSales(); render(); }
     if(tab==='users'){ await loadCategories(); render(); }
@@ -1364,6 +1368,10 @@ async function loadPharmacists(){
   const res = await apiRequest('/users/pharmacists');
   pharmacistsCache = res.data;
 }
+async function loadPreviousDues(){
+  const res = await apiRequest('/payouts/me');
+  previousDuesCache = res.data.rows;
+}
 async function loadPayouts(){
   const qs = payoutsMonth ? ('?month=' + payoutsMonth) : '';
   const res = await apiRequest('/payouts' + qs);
@@ -1371,6 +1379,7 @@ async function loadPayouts(){
   payoutsMonth = payoutsData.month;
 }
 
+/* -------------------- تبويب: إضافة / تعديل عملية بيع -------------------- */
 /* -------------------- تبويب: إضافة / تعديل عملية بيع -------------------- */
 function tabAdd(){
   if(selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA')){
@@ -2026,6 +2035,45 @@ function tabEarnings(){
   `;
 }
 
+/* -------------------- تبويب: مستحقاتي السابقة -------------------- */
+function tabPreviousDues(){
+  if(previousDuesCache===null){
+    return `<div class="section-title">مستحقاتي السابقة</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const rows = previousDuesCache;
+  if(rows.length===0){
+    return `
+    <div class="section-title">مستحقاتي السابقة</div>
+    <div class="empty-state">
+      <div class="ic">🗓️</div>
+      <div class="t">لا يوجد سجل بعد</div>
+      <div class="d">أول ما تنقبل عملية بيع، بيظهر هون سجل كل شهر بقيمته وحالته.</div>
+    </div>`;
+  }
+  return `
+  <div class="section-title">مستحقاتي السابقة</div>
+  <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 16px;line-height:1.7;">
+    سجل مستحقاتك شهرًا بشهر — القيمة وحالة التحويل.
+  </p>
+  ${rows.map(r=>`
+    <div class="ticket">
+      <div class="sale-row">
+        <div style="flex:1;">
+          <div class="cat">${fmtMonth(r.month)}</div>
+          <div class="meta">${r.salesCount} عملية${r.status==='PAID' && r.paidAt ? ' · تم التحويل ' + fmtDate(r.paidAt) : ''}${r.inProgress ? ' · لسا قيد التجميع' : ''}</div>
+          <div style="margin-top:5px;">${
+            r.status==='PAID'
+              ? '<span class="badge ok">✓ تم التحويل</span>'
+              : (r.inProgress ? '<span class="badge" style="background:var(--card2);color:var(--ink-soft);">قيد التجميع</span>' : '<span class="badge pending">بانتظار التحويل</span>')
+          }</div>
+        </div>
+        <div class="commission">${fmtMoney(r.amount)} د.أ</div>
+      </div>
+    </div>
+  `).join('')}
+  `;
+}
+
 /* -------------------- تبويب: الإحالة -------------------- */
 function tabReferral(){
   if(referralSummaryCache===null){
@@ -2647,6 +2695,13 @@ function tabPayouts(){
   </div>` : '';
   const closedNote = d.isClosed ? '' : `
   <div class="dup-warning" style="margin-bottom:14px;">🕒 هذا الشهر لسا ما انتهى (ينتهي 11:59 مساءً آخر يوم بتوقيت الأردن) — الأرقام لسا بتتغيّر ولا يمكن تأكيد التحويل الآن.</div>`;
+  // معاينة الشهر الحالي (المفتوح) لما تكون الصفحة عم تعرض شهر مغلق فاضي أو غير الحالي —
+  // بتفسّر للأدمن ليش ما بيشوف عمليات جديدة (لأنها لسا عم تتجمّع بشهر ما انتهى بعد)
+  const currentPreview = d.currentMonthPreview ? `
+  <div class="otp-banner" style="display:block;margin-bottom:14px;line-height:1.8;">
+    <span>💡 الشهر الحالي (${fmtMonth(d.currentMonthPreview.month)}) لسا مفتوح وعم يتجمّع فيه <b class="num">${fmtMoney(d.currentMonthPreview.amount)} د.أ</b> عند <b class="num">${d.currentMonthPreview.pharmacistsCount}</b> صيدلي — بيصير قابل للتحويل بعد ما ينتهي الشهر.</span>
+    <button class="btn sm" style="margin-top:8px;" onclick="jumpToCurrentPayoutsMonth('${d.currentMonthPreview.month}')">معاينة هذا الشهر</button>
+  </div>` : '';
 
   return `
   <div class="admin-section-head">
@@ -2666,6 +2721,7 @@ function tabPayouts(){
 
     ${warn}
     ${closedNote}
+    ${currentPreview}
 
     <div class="stat-grid">
       <div class="stat-card"><div class="v num">${fmtMoney(t.unpaidAmount)}</div><div class="l">المطلوب تحويله (د.أ)</div></div>
@@ -2755,6 +2811,12 @@ function renderPayoutRow(r, d){
 async function changePayoutsMonth(delta){
   const cur = payoutsData ? payoutsData.month : shiftMonthKey(currentMonthKey(), -1);
   payoutsMonth = shiftMonthKey(cur, delta);
+  payoutsData = null; confirmingPayoutId = null;
+  render();
+  try{ await loadPayouts(); render(); }catch(e){ toast(e.message, 'danger'); }
+}
+async function jumpToCurrentPayoutsMonth(monthKey){
+  payoutsMonth = monthKey;
   payoutsData = null; confirmingPayoutId = null;
   render();
   try{ await loadPayouts(); render(); }catch(e){ toast(e.message, 'danger'); }
