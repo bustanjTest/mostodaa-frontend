@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <!-- سياسة أمان المحتوى: تمنع الاتصال بأي سيرفر غير الـ API الخاص بنا (يحدّ من سرقة التوكن لو صار XSS).
      ملاحظة: لو غيّرت عنوان الـ API (دومين مخصص مثلاً) لازم تعدّل connect-src هون وعنوان API_BASE بالسكربت. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://mostodaa-backend.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://mostodaa-backend-3d1m.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>مستودع مسروجي · نظام العمولات (متصل بالسيرفر)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -326,7 +326,7 @@
    ========================================================= */
 
 /* ---------------- إعدادات ---------------- */
-const API_BASE = (window.MOSTODAA_API_BASE || 'https://mostodaa-backend.onrender.com/api');
+const API_BASE = (window.MOSTODAA_API_BASE || 'https://mostodaa-backend-3d1m.onrender.com/api');
 
 const JORDAN_CITIES = ['عمّان','إربد','الزرقاء','البلقاء (السلط)','المفرق','الكرك','معان','الطفيلة','مأدبا','جرش','عجلون','العقبة'];
 const DEPARTMENTS = [ { value:'MEDICINE', label:'الأدوية', icon:'💊' }, { value:'COSMETICS', label:'الكوزمتك', icon:'💄' } ];
@@ -485,7 +485,6 @@ async function apiRequest(path, { method='GET', json=null, form=null, auth=true 
 
   if(!res.ok){
     let msg = data && data.message ? data.message : ('حدث خطأ (كود ' + res.status + ')');
-    // إذا فيه تفاصيل أخطاء تحقق (validation) من الزود، نوضحها بدل رسالة عامة غامضة
     if(data && Array.isArray(data.details) && data.details.length){
       msg = data.details.map(d => d.message).join(' — ');
     }
@@ -493,7 +492,6 @@ async function apiRequest(path, { method='GET', json=null, form=null, auth=true 
     err.details = data && data.details;
     err.code = data && data.code;
     err.status = res.status;
-    // 401 على طلب فيه توكن = الجلسة انتهت/انلغت. (أما فشل تسجيل الدخول نفسه فبيعرض رسالته العادية)
     if(res.status === 401 && auth && token){ handleUnauthorized(); }
     throw err;
   }
@@ -528,8 +526,6 @@ function toast(msg, kind){
   wrap.appendChild(el);
   setTimeout(()=>{ el.remove(); }, 3200);
 }
-// ينظّف أي نص جاي من المستخدم/السيرفر قبل حقنه جوا innerHTML، يمنع Stored XSS
-// (لازم يُستخدم على كل قيمة نصية حرة زي الاسم/الصيدلية/المدينة/سبب الرفض...)
 function esc(value){
   if(value === null || value === undefined) return '';
   return String(value)
@@ -539,7 +535,6 @@ function esc(value){
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-// الدينار الأردني = 3 خانات عشرية (فلس) — نفس دقة قاعدة البيانات، حتى ما يختلف اللي بالشاشة عن اللي بيتحوّل
 function fmtMoney(n){ return Number(n||0).toFixed(3); }
 function fmtMonth(key){
   if(!key) return '';
@@ -722,7 +717,6 @@ async function chooseDepartment(dep){
   CATEGORIES = [];
   compensationItemsCache = { ASIL:null, ZAROZA:null };
   if(dep === 'COSMETICS'){
-    // قسم الكوزمتك فيه 3 أنواع عمليات، لازم يختار الصيدلي النوع أول (شاشة saleMode تظهر تلقائيًا)
     saleMode = null;
     render();
   } else {
@@ -990,7 +984,6 @@ async function sendOtp(){
     render();
   }catch(e){
     if(e.code === 'PHONE_EXISTS'){
-      // الرقم مسجّل: نعرض رسالة + زر استعادة كلمة المرور بدل رسالة خطأ عادية
       pendingReg.name = name; pendingReg.phone = phone;
       regPhoneExists = true; otpSent = false; otpCode = null;
       render();
@@ -1141,9 +1134,6 @@ const screens = { landing: screenLanding, login: screenLogin, forgot: screenForg
 /* ============================================================
    تسجيل الدخول
    ============================================================ */
-// أي إدخال مش رقم هاتف مكوّن من 10 أرقام بالضبط = محاولة دخول أدمن (باسم مستخدم)
-// نوع أدمن واحد بصلاحيات كاملة (بيدخل باسم مستخدم)
-
 async function doLogin(){
   const idValue = document.getElementById('loginPhone').value.trim();
   const pass = document.getElementById('loginPass').value;
@@ -1166,7 +1156,6 @@ async function doLogin(){
     const res = isAdminAttempt
       ? await apiRequest('/auth/admin/login', { method:'POST', auth:false, json:{ username: idValue, password: pass } })
       : await apiRequest('/auth/pharmacist/login', { method:'POST', auth:false, json:{ phoneNumber: idValue, password: pass } });
-    // تحقق بخطوتين للأدمن (لو مفعّل): السيرفر بيرجّع challengeToken بدل التوكن
     if(res.data && res.data.requires2fa){
       admin2fa = { challengeToken: res.data.challengeToken, maskedPhone: res.data.maskedPhone || '', devCode: res.data.devOtpCode || null };
       goto('twofa');
@@ -1187,12 +1176,10 @@ async function afterAuthSuccess(newToken){
   resetAddFlow();
   toast('مرحبًا ' + currentUser.fullName + ' 👋');
   if(currentUser.type === 'admin'){
-    // الأدمن: أول شي شاشة اختيار اللوحة (أدوية / كوزمتك)
     adminPanelChosen = false; adminDeptFilter = '';
     activeTab = 'admin';
     render();
   } else {
-    // الصيدلي يختار القسم أول شي (شاشة deptChoice تظهر تلقائيًا لأن selectedDepartment فاضي)
     render();
   }
 }
@@ -1200,8 +1187,6 @@ async function afterAuthSuccess(newToken){
 async function loadMe(){
   const res = await apiRequest('/users/me');
   currentUser = res.data;
-  // نوع أدمن واحد بصلاحيات كاملة: هالعلامة بتخلّي كل كود الواجهة القديم (اللي كان بيفرّق بين
-  // أدمن قسم وأدمن رئيسي) يتعامل مع الأدمن كصاحب صلاحيات كاملة، والقسم بيجي من اللوحة المختارة.
   if(currentUser.type === 'admin') currentUser.role = 'SUPER_ADMIN';
 }
 
@@ -1225,10 +1210,9 @@ function clearAllCaches(){
   compReportsRows = { ASIL: null, ZAROZA: null }; compReportsActive = { ASIL:false, ZAROZA:false };
 }
 
-// يحدد القسم المطلوب إرساله للسيرفر حسب نوع المستخدم الحالي
 function currentDepartmentParam(){
   if(currentUser.type === 'pharmacist') return selectedDepartment;
-  return adminDeptFilter || null; // الأدمن: اللوحة اللي دخلها (أدوية/كوزمتك)
+  return adminDeptFilter || null;
 }
 
 async function loadCategories(){
@@ -1238,7 +1222,6 @@ async function loadCategories(){
   CATEGORIES = res.data;
 }
 
-// يحمّل أصناف تعويض الأصيل/زاروزا (type=ASIL أو ZAROZA) حسب القسم الحالي، ويخزّنها بالكاش
 async function loadCompensationItems(type){
   const dep = currentDepartmentParam() || 'COSMETICS';
   const qs = '?type=' + type + (dep ? ('&department=' + dep) : '');
@@ -1328,7 +1311,6 @@ async function switchTab(tab){
   if(tab==='payoutInfo'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; }
   if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
   if(tab==='history'){
-    // قسم الأدوية عنده نوع فواتير واحد بس، فنختاره تلقائيًا بدون ما نعرض شاشة اختيار
     historyFilterType = selectedDepartment==='MEDICINE' ? 'NORMAL' : null;
     showFreeItemsSummary = false;
   }
@@ -1342,9 +1324,6 @@ async function loadTabData(tab){
       if(selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA')){
         if(!compensationItemsCache[saleMode]){ await loadCompensationItems(saleMode); render(); }
       } else {
-        // نعيد تحميل الأصناف في كل مرة (مو بس أول مرة) لأن العمولة الفعلية
-        // لكل صنف (effectiveCommissionPerUnit) شخصية للصيدلي وبتتغيّر بمجرد
-        // ما الأدمن يوافق على فواتيره — لازم تنعرض محدّثة كل ما فتح الشاشة
         await loadCategories(); render();
       }
     }
@@ -1370,7 +1349,6 @@ async function loadReferralSummary(){
   referralSummaryCache = res.data;
 }
 async function loadAdminSales(){
-  // لو الأدمن جاي من صفحة الدفعات لمراجعة فواتير صيدلي معيّن: بنعرض فواتيره بالقسمين
   const qs = adminPharmacistFilter
     ? ('&pharmacistId=' + adminPharmacistFilter)
     : (currentDepartmentParam() ? ('&department=' + currentDepartmentParam()) : '');
@@ -1396,7 +1374,7 @@ function tabAdd(){
   if(CATEGORIES.length===0){
     return `<div class="section-title">إضافة عملية بيع</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
   }
-  const isEditing = false; // لا يوجد تعديل بعد الإرسال
+  const isEditing = false;
 
   if(lastSubmittedSale){
     const s = lastSubmittedSale;
@@ -1455,7 +1433,7 @@ function tabAddCompensation(){
     return `<div class="section-title">${title}</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
   }
 
-  const isEditing = false; // لا يوجد تعديل بعد الإرسال
+  const isEditing = false;
 
   if(lastSubmittedSale){
     const s = lastSubmittedSale;
@@ -1526,7 +1504,7 @@ function pickFreeItem(id){
   if(!mainItem || !freeItem) return;
   if(Number(freeItem.price) > Number(mainItem.price)){
     toast('يجب أن يكون سعر الفري أقل من أو يساوي سعر الأصلي', 'danger');
-    render(); // بيرجع القائمة لوضعها الأصلي (بدون اختيار)
+    render();
     return;
   }
   addFlow.freeItemId = id;
@@ -1535,7 +1513,6 @@ function pickFreeItem(id){
   render();
 }
 
-// خطوة مشتركة: رقم الفاتورة + تاريخ الفاتورة + إرفاق صورة الفاتورة (كاميرا مباشرة أو من المكتبة)
 function invoiceDateBounds(){
   const now = new Date();
   const min = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60);
@@ -1663,7 +1640,6 @@ function finalizeSale(){
   render();
 }
 
-// يرجع اسم/وصف الصنف المعروض لعملية بيع، سواء كانت بيع عادي أو تعويض أصيل/زاروزا
 function saleItemLabel(s){
   const type = s.saleType || 'NORMAL';
   if(type === 'ASIL' || type === 'ZAROZA'){
@@ -1680,7 +1656,6 @@ function tabHistory(){
     return `<div class="section-title">سجل المبيعات</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
 
-  // أول ما يدخل الصيدلي على السجل لازم يحدد نوع الفواتير اللي بدو يشوفها
   if(!historyFilterType){
     return `
     <div class="section-title">سجل المبيعات</div>
@@ -1765,7 +1740,6 @@ function tabHistory(){
   `;
 }
 
-// ملخص القطع الفري (قطع التعويض) المستحقة للصيدلي من الفواتير المؤكدة فقط
 function freeItemsSummaryHtml(mySales){
   const approved = mySales.filter(s=>s.status==='APPROVED');
   const counts = {};
@@ -1822,7 +1796,6 @@ function tabPayoutInfo(){
   const savedValue = currentUser.payoutValue || '';
   const isFirstTime = !savedType && !savedValue;
 
-  // أول مرة فقط: شاشة تعريف لازم يوافق عليها قبل ما يدخل أي بيانات
   if(isFirstTime && !payoutIntroAcked){
     return `
     <div class="section-title">بيانات الاستلام</div>
@@ -1912,7 +1885,6 @@ async function savePayoutInfo(){
 
   try{
     if(isChange && !payoutOtpSent){
-      // الخطوة 1 من التغيير: إرسال رمز التحقق
       if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
       const r = await apiRequest('/users/me/payout/send-otp', { method:'POST' });
       payoutOtpSent = true;
@@ -1948,7 +1920,6 @@ function tabEarnings(){
   const savedValue = currentUser.payoutValue || '';
   const summary = computeMyPayoutSummary();
 
-  // ما سجّل ولا عملية بيع بعد: رسالة محايدة، وما في داعي نحكي عن مبالغ
   if(!summary.hasAnySale){
     return `
     <div class="section-title">مستحقاتي</div>
@@ -2084,7 +2055,7 @@ function copyReferralText(text){
 
 /* -------------------- قائمة مراجعة الفواتير (لوحة الأدمن) -------------------- */
 function renderReviewQueue(){
-  const showDept = !!adminPharmacistFilter; // لما نراجع صيدلي معيّن بنعرض القسم لأن فواتيره من القسمين
+  const showDept = !!adminPharmacistFilter;
   const pendingSales = (adminSalesCache||[]).filter(s=>s.status==='PENDING').sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
   return `
   <div class="admin-section">
@@ -2530,7 +2501,6 @@ async function submitAdminPasswordChange(){
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
   try{
     const res = await apiRequest('/auth/admin/change-password', { method:'POST', json:{ currentPassword: cur, newPassword: n1 } });
-    // السيرفر بيلغي الجلسات القديمة ويرجّع توكن جديد للجلسة الحالية
     token = res.data.token;
     localStorage.setItem('mm_token', token);
     accountMsg = 'تم تغيير كلمة السر بنجاح ✓';
@@ -2601,8 +2571,6 @@ async function togglePharmacistActive(id, makeActive){
 }
 
 /* -------------------- تبويب: الدفعات الشهرية -------------------- */
-// يبني تاريخ YYYY-MM-DD من التوقيت المحلي مباشرة (بدون المرور بـ toISOString/UTC)
-// عشان نتجنب مشكلة انزياح يوم كامل لأي مستخدم بتوقيت شرق غرينتش (زي الأردن +3)
 function toLocalDateStr(d){
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
@@ -2873,7 +2841,6 @@ function renderRegionFilterResults(){
   </div>`;
 }
 
-// نسخة نصية بدون HTML من saleItemLabel، لاستخدامها بملفات Excel المصدَّرة
 function saleItemLabelPlain(s){
   const type = s.saleType || 'NORMAL';
   if(type === 'ASIL' || type === 'ZAROZA'){
@@ -3010,7 +2977,6 @@ function exportCompDetailedExcel(type){
   toast('تم تصدير الملف التفصيلي');
 }
 
-// يجمّع القطع الفري (قطع التعويض) المستحقة، مقسّمة حسب كل صيدلية لحالها
 function computeFreeItemsByPharmacy(rows){
   const byPharm = {};
   rows.forEach(s=>{
@@ -3031,8 +2997,6 @@ function computeFreeItemsByPharmacy(rows){
     .sort((a,b)=> a.pharmacyName.localeCompare(b.pharmacyName,'ar'));
 }
 
-// تصدير PDF: بيفتح نافذة طباعة منسّقة، كل صيدلية بصفحة منفصلة، وبيطلع مربع طباعة المتصفح
-// (اختر "حفظ كـ PDF" من قائمة الطابعة) — هاي الطريقة أضمن لعرض العربي صح من مكتبات PDF المباشرة
 function printCompFreeItemsPDF(type){
   const rows = compReportsRows[type] || [];
   if(rows.length===0){ toast('لا توجد فواتير لتصديرها', 'danger'); return; }
@@ -3119,11 +3083,9 @@ function exportSalesToExcel(){
 
 /* ---------------- init ---------------- */
 (async function init(){
-  // لو دخل الصيدلي عبر رابط إحالة (?ref=CODE)، نحفظ الكود لنعبّيه تلقائيًا بخطوة التسجيل
   try{
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
-    // كود الإحالة: نقبل فقط حروف وأرقام (يمنع أي محاولة حقن من الرابط)
     if(ref && /^[A-Za-z0-9]{4,12}$/.test(ref.trim())) incomingReferralCode = ref.trim().toUpperCase();
   }catch(e){}
 
@@ -3133,13 +3095,12 @@ function exportSalesToExcel(){
       await loadMe();
       clearAllCaches();
       if(currentUser.type === 'admin'){
-        // الأدمن: شاشة اختيار اللوحة (أدوية / كوزمتك) أول شي
         adminPanelChosen = false; adminDeptFilter = '';
         activeTab = 'admin';
         render();
       } else {
         activeTab = 'add';
-        render(); // بيعرض شاشة اختيار القسم تلقائيًا إذا selectedDepartment فاضي
+        render();
       }
       return;
     }catch(e){
