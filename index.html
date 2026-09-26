@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <!-- سياسة أمان المحتوى: تمنع الاتصال بأي سيرفر غير الـ API الخاص بنا (يحدّ من سرقة التوكن لو صار XSS).
      ملاحظة: لو غيّرت عنوان الـ API (دومين مخصص مثلاً) لازم تعدّل connect-src هون وعنوان API_BASE بالسكربت. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://mostodaa-backend-3d1m.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://mostodaa-backend.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>مستودع مسروجي · نظام العمولات (متصل بالسيرفر)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -233,7 +233,7 @@
   .export-btn{display:inline-flex;align-items:center;gap:6px;background:#1D6F3E;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;}
   .export-btn:hover{background:#175A32;}
 
-  /* ---------- review queue & leaderboard ---------- */
+  /* ---------- قائمة مراجعة الفواتير ---------- */
   .review-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
   .review-top{display:flex;gap:12px;align-items:flex-start;}
   .review-thumb{width:58px;height:58px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex:none;cursor:pointer;transition:transform .12s;}
@@ -326,7 +326,7 @@
    ========================================================= */
 
 /* ---------------- إعدادات ---------------- */
-const API_BASE = (window.MOSTODAA_API_BASE || 'https://mostodaa-backend-3d1m.onrender.com/api');
+const API_BASE = (window.MOSTODAA_API_BASE || 'https://mostodaa-backend.onrender.com/api');
 
 const JORDAN_CITIES = ['عمّان','إربد','الزرقاء','البلقاء (السلط)','المفرق','الكرك','معان','الطفيلة','مأدبا','جرش','عجلون','العقبة'];
 const DEPARTMENTS = [ { value:'MEDICINE', label:'الأدوية', icon:'💊' }, { value:'COSMETICS', label:'الكوزمتك', icon:'💄' } ];
@@ -374,6 +374,7 @@ let admin2fa = { challengeToken:null, maskedPhone:'', devCode:null };
 let payoutDraft = null;      // { type, value }
 let payoutOtpSent = false;
 let payoutOtpDev = null;
+let payoutIntroAcked = false; // أول مرة (قبل ما يدخل بيانات الاستلام): وافق على شاشة التعريف؟
 // كود إحالة جاء من رابط دعوة (?ref=CODE) — يتعبى تلقائيًا بخطوة التسجيل لو موجود
 let incomingReferralCode = null;
 
@@ -433,7 +434,6 @@ let editCatTierEnabled = {};
 // تبويب الإحالة
 let referralSummaryCache = null;
 
-let leaderboardCache = null;
 
 let adminFilter = { city:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
 let adminFilterActive = false;
@@ -700,7 +700,7 @@ function screenAdminPanelChoice(){
 async function chooseAdminPanel(dep){
   adminDeptFilter = dep;
   adminPanelChosen = true;
-  adminSalesCache = null; leaderboardCache = null; CATEGORIES = [];
+  adminSalesCache = null; CATEGORIES = [];
   compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
   adminFilterActive = false; reportsRows = [];
   compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
@@ -735,7 +735,7 @@ async function chooseDepartment(dep){
 function switchDepartment(){
   selectedDepartment = null;
   saleMode = null;
-  CATEGORIES = []; mySalesCache = null; leaderboardCache = null;
+  CATEGORIES = []; mySalesCache = null;
   historyFilterType = null; showFreeItemsSummary = false;
   compensationItemsCache = { ASIL:null, ZAROZA:null };
   render();
@@ -1209,7 +1209,7 @@ function doLogout(){
   token = null; currentUser = null;
   localStorage.removeItem('mm_token');
   selectedDepartment = null; adminDeptFilter = ''; adminPanelChosen = false; saleMode = null;
-  resetReg(); resetForgot(); payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null;
+  resetReg(); resetForgot(); payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; payoutIntroAcked = false;
   clearAllCaches();
   goto('landing');
 }
@@ -1217,7 +1217,7 @@ function doLogout(){
 function clearAllCaches(){
   CATEGORIES = []; mySalesCache = null; adminSalesCache = null; pharmacistsCache = null;
   historyFilterType = null; showFreeItemsSummary = false; referralSummaryCache = null;
-  leaderboardCache = null; adminFilterActive = false; statsFilterActive = false;
+  adminFilterActive = false; statsFilterActive = false;
   payoutsData = null; payoutsMonth = ''; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
   adminPharmacistFilter = null;
   compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
@@ -1288,7 +1288,8 @@ function screenAppShell(){
   <div class="app-body ${isWide?'wide':''}" id="tabContent">
     ${activeTab==='add' ? tabAdd() : ''}
     ${activeTab==='history' ? tabHistory() : ''}
-    ${activeTab==='payout' ? tabPayout() : ''}
+    ${activeTab==='payoutInfo' ? tabPayoutInfo() : ''}
+    ${activeTab==='earnings' ? tabEarnings() : ''}
     ${activeTab==='referral' ? tabReferral() : ''}
     ${activeTab==='reports' ? tabReports() : ''}
     ${activeTab==='compReportsAsil' ? tabCompReports('ASIL') : ''}
@@ -1296,7 +1297,6 @@ function screenAppShell(){
     ${activeTab==='users' ? tabCategoriesMgmt() : ''}
     ${activeTab==='stats' ? tabPharmacists() : ''}
     ${activeTab==='payouts' ? tabPayouts() : ''}
-    ${activeTab==='leaderboard' ? tabLeaderboard() : ''}
     ${activeTab==='admin' ? tabAdmin() : ''}
     ${activeTab==='account' ? tabAccount() : ''}
   </div>
@@ -1304,7 +1304,8 @@ function screenAppShell(){
     <div class="tabbar ${isWide?'wide':''}">
       ${!isAdmin ? `<button class="${activeTab==='add'?'active':''}" onclick="switchTab('add')"><span class="ic">＋</span>إضافة</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='history'?'active':''}" onclick="switchTab('history')"><span class="ic">🧾</span>السجل</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='payout'?'active':''}" onclick="switchTab('payout')"><span class="ic">💳</span>الدفع</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='payoutInfo'?'active':''}" onclick="switchTab('payoutInfo')"><span class="ic">💳</span>بيانات الاستلام</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='earnings'?'active':''}" onclick="switchTab('earnings')"><span class="ic">💰</span>مستحقاتي</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
@@ -1312,7 +1313,6 @@ function screenAppShell(){
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='users'?'active':''}" onclick="switchTab('users')"><span class="ic">🗂️</span>الأصناف</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='stats'?'active':''}" onclick="switchTab('stats')"><span class="ic">📈</span>العملاء المسجلون</button>` : ''}
-      <button class="${activeTab==='leaderboard'?'active':''}" onclick="switchTab('leaderboard')"><span class="ic">🏆</span>الترتيب</button>
       ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='account'?'active':''}" onclick="switchTab('account')"><span class="ic">🔑</span>حسابي</button>` : ''}
     </div>
@@ -1325,7 +1325,7 @@ async function switchTab(tab){
   if(tab==='payouts'){ confirmingPayoutId = null; }
   if(tab==='account'){ accountMsg = null; }
   if(tab==='add'){ resetAddFlow(); }
-  if(tab==='payout'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; }
+  if(tab==='payoutInfo'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; }
   if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
   if(tab==='history'){
     // قسم الأدوية عنده نوع فواتير واحد بس، فنختاره تلقائيًا بدون ما نعرض شاشة اختيار
@@ -1349,9 +1349,9 @@ async function loadTabData(tab){
       }
     }
     if(tab==='history'){ await loadMySales(); render(); }
-    if(tab==='payout'){ await loadMySales(); render(); }
+    if(tab==='payoutInfo'){ await loadMySales(); render(); }
+    if(tab==='earnings'){ await loadMySales(); render(); }
     if(tab==='referral'){ await loadReferralSummary(); render(); }
-    if(tab==='leaderboard'){ await loadLeaderboard(); render(); }
     if(tab==='admin'){ await loadAdminSales(); render(); }
     if(tab==='users'){ await loadCategories(); render(); }
     if(tab==='stats'){ await loadPharmacists(); render(); }
@@ -1380,12 +1380,6 @@ async function loadAdminSales(){
 async function loadPharmacists(){
   const res = await apiRequest('/users/pharmacists');
   pharmacistsCache = res.data;
-}
-async function loadLeaderboard(){
-  const dep = currentDepartmentParam();
-  const qs = dep ? ('?department=' + dep) : '';
-  const res = await apiRequest('/leaderboard' + qs);
-  leaderboardCache = res.data;
 }
 async function loadPayouts(){
   const qs = payoutsMonth ? ('?month=' + payoutsMonth) : '';
@@ -1819,44 +1813,34 @@ function computeMyPayoutSummary(){
   const transferredSales = approved.filter(s=>s.paid);
   const transferred = transferredSales.reduce((a,s)=>a+Number(s.commissionAmount),0);
   const lastTransfer = transferredSales.sort((a,b)=> new Date(b.paidAt)-new Date(a.paidAt))[0];
-  return { pending, transferred, lastTransferAt: lastTransfer ? lastTransfer.paidAt : null };
+  return { pending, transferred, lastTransferAt: lastTransfer ? lastTransfer.paidAt : null, hasAnySale: mySales.length>0 };
 }
 
-function tabPayout(){
-  if(mySalesCache===null){
-    return `<div class="section-title">الدفع</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
-  }
+/* -------------------- تبويب: بيانات الاستلام -------------------- */
+function tabPayoutInfo(){
   const savedType = currentUser.payoutType || '';
   const savedValue = currentUser.payoutValue || '';
+  const isFirstTime = !savedType && !savedValue;
+
+  // أول مرة فقط: شاشة تعريف لازم يوافق عليها قبل ما يدخل أي بيانات
+  if(isFirstTime && !payoutIntroAcked){
+    return `
+    <div class="section-title">بيانات الاستلام</div>
+    <div class="otp-banner" style="display:block;line-height:1.9;margin-bottom:14px;">
+      💡 يتم تحويل المستحقات <b>مرة واحدة كل شهر (يوم 1)</b> عن فواتير الشهر الماضي المقبولة. الفواتير المرسلة من أول الشهر الجديد بتنحسب بالدفعة اللي بعدها.
+    </div>
+    <div class="otp-banner" style="display:block;line-height:1.9;margin-bottom:20px;">
+      🔒 لحمايتك، تغيير بيانات الاستلام لاحقًا يحتاج رمز تحقق يوصلك على هاتفك المسجّل.
+    </div>
+    <button class="btn" onclick="ackPayoutIntro()">موافق، متابعة</button>`;
+  }
+
   if(!payoutDraft) payoutDraft = { type: savedType, value: savedValue };
   const type = payoutDraft.type || '';
-  const summary = computeMyPayoutSummary();
   const isChange = !!savedValue && (payoutDraft.type !== savedType || payoutDraft.value.trim() !== savedValue);
 
   return `
-  <div class="section-title">الدفع</div>
-
-  <div class="history-summary" style="margin-bottom:10px;">
-    <div>
-      <div class="lbl">إجمالي العمولات المستحقة</div>
-      <div class="val num">${fmtMoney(summary.pending)} د.أ</div>
-    </div>
-    <div class="cnt"><span class="badge pending">تم التأكيد، بانتظار تحويل المبلغ</span></div>
-  </div>
-  ${summary.transferred>0 ? `
-  <div class="history-summary" style="background:linear-gradient(155deg,#1D7A4C,#175A32);margin-bottom:18px;">
-    <div>
-      <div class="lbl">تم تحويله سابقًا${summary.lastTransferAt ? ' — آخر تحويل ' + fmtDate(summary.lastTransferAt) : ''}</div>
-      <div class="val num">${fmtMoney(summary.transferred)} د.أ</div>
-    </div>
-    <div class="cnt"><span class="badge ok">✓ تم تحويل المبلغ</span></div>
-  </div>` : `<div style="height:6px;"></div>`}
-
-  <div class="otp-banner" style="display:block;line-height:1.8;margin-bottom:16px;">
-    💡 يتم تحويل المستحقات <b>مرة واحدة كل شهر (يوم 1)</b> عن فواتير الشهر الماضي المقبولة. الفواتير المرسلة من أول الشهر الجديد بتنحسب بالدفعة اللي بعدها.
-  </div>
-
-  <div class="section-title" style="font-size:15px;">بيانات استلام الدفعة</div>
+  <div class="section-title">بيانات الاستلام</div>
   <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
     حدّد الطريقة التي تريد استلام مستحقاتك المالية عليها، ليتمكن المدير من تحويل المبلغ إليك بسهولة.
   </p>
@@ -1896,6 +1880,11 @@ function tabPayout(){
   <button class="btn" id="savePayoutBtn" onclick="savePayoutInfo()">${isChange ? (payoutOtpSent ? 'تأكيد وحفظ التغيير' : 'إرسال رمز التحقق') : 'حفظ'}</button>
   ` : ''}
   `;
+}
+
+function ackPayoutIntro(){
+  payoutIntroAcked = true;
+  render();
 }
 
 function onPayoutTypeChange(v){
@@ -1949,6 +1938,66 @@ async function savePayoutInfo(){
     toast(e.message, 'danger');
     if(btn){ btn.disabled = false; render(); }
   }
+}
+
+/* -------------------- تبويب: مستحقاتي -------------------- */
+function tabEarnings(){
+  if(mySalesCache===null){
+    return `<div class="section-title">مستحقاتي</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  const savedValue = currentUser.payoutValue || '';
+  const summary = computeMyPayoutSummary();
+
+  // ما سجّل ولا عملية بيع بعد: رسالة محايدة، وما في داعي نحكي عن مبالغ
+  if(!summary.hasAnySale){
+    return `
+    <div class="section-title">مستحقاتي</div>
+    <div class="empty-state">
+      <div class="ic">💰</div>
+      <div class="t">لسا ما سجّلت أي عملية بيع</div>
+      <div class="d">أول ما تضيف عملية وتنقبل من الإدارة، بيظهر هون مجموع مستحقاتك.</div>
+    </div>`;
+  }
+
+  const noPayoutInfoNote = !savedValue ? `
+  <div class="otp-banner" style="display:block;margin-bottom:16px;">
+    <span>لسا ما أدخلت بيانات استلام الدفعة.</span>
+    <button class="btn sm" style="margin-top:8px;" onclick="switchTab('payoutInfo')">إدخال بيانات الاستلام</button>
+  </div>` : '';
+
+  const pendingBlock = summary.pending>0 ? `
+  <div class="history-summary" style="margin-bottom:10px;">
+    <div>
+      <div class="lbl">إجمالي العمولات المستحقة</div>
+      <div class="val num">${fmtMoney(summary.pending)} د.أ</div>
+    </div>
+    <div class="cnt"><span class="badge pending">تم التأكيد، بانتظار تحويل المبلغ</span></div>
+  </div>` : `
+  <div class="history-summary" style="margin-bottom:10px;">
+    <div>
+      <div class="lbl">إجمالي العمولات المستحقة</div>
+      <div class="val num">0.000 د.أ</div>
+    </div>
+    <div class="cnt"><span class="badge" style="background:var(--card2);color:var(--ink-soft);">لا يوجد مبلغ مستحق حاليًا</span></div>
+  </div>`;
+
+  return `
+  <div class="section-title">مستحقاتي</div>
+  ${noPayoutInfoNote}
+  ${pendingBlock}
+  ${summary.transferred>0 ? `
+  <div class="history-summary" style="background:linear-gradient(155deg,#1D7A4C,#175A32);margin-bottom:18px;">
+    <div>
+      <div class="lbl">تم تحويله سابقًا${summary.lastTransferAt ? ' — آخر تحويل ' + fmtDate(summary.lastTransferAt) : ''}</div>
+      <div class="val num">${fmtMoney(summary.transferred)} د.أ</div>
+    </div>
+    <div class="cnt"><span class="badge ok">✓ تم تحويل المبلغ</span></div>
+  </div>` : ''}
+
+  <div class="otp-banner" style="display:block;line-height:1.8;">
+    💡 يتم تحويل المستحقات <b>مرة واحدة كل شهر (يوم 1)</b> عن فواتير الشهر الماضي المقبولة. الفواتير المرسلة من أول الشهر الجديد بتنحسب بالدفعة اللي بعدها.
+  </div>
+  `;
 }
 
 /* -------------------- تبويب: الإحالة -------------------- */
@@ -2031,51 +2080,6 @@ function copyReferralText(text){
   } else {
     toast('تعذر النسخ التلقائي بهذا المتصفح، انسخه يدويًا', 'danger');
   }
-}
-
-/* -------------------- تبويب: الترتيب -------------------- */
-function tabLeaderboard(){
-  if(leaderboardCache===null){
-    return `<div class="section-title">ترتيب هذا الشهر</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
-  }
-  const { top10, myRank } = leaderboardCache;
-
-  if(!top10 || top10.length===0){
-    return `
-    <div class="section-title">ترتيب هذا الشهر</div>
-    <div class="empty-state">
-      <div class="ic">🏆</div>
-      <div class="t">لا يوجد ترتيب بعد</div>
-      <div class="d">أول عمولة مؤكدة هذا الشهر بتفتح الترتيب</div>
-    </div>`;
-  }
-
-  const rankClass = i => i===0?'gold':i===1?'silver':i===2?'bronze':'';
-  const myId = currentUser.type==='pharmacist' ? currentUser.id : null;
-
-  return `
-  <div class="section-title">ترتيب هذا الشهر</div>
-  ${top10.map((r,i)=>`
-    <div class="lb-row ${r.pharmacistId===myId?'me':''}">
-      <div class="lb-rank ${rankClass(i)}">${i+1}</div>
-      <div class="lb-name">
-        <div class="n">${esc(r.pharmacyName)}</div>
-        <div class="c">${esc(r.city)}</div>
-      </div>
-      <div class="lb-amt">${fmtMoney(r.totalCommission)} د.أ</div>
-    </div>
-  `).join('')}
-  ${(myRank && myRank.rank>10) ? `
-  <div class="divider">ترتيبك</div>
-  <div class="lb-row me">
-    <div class="lb-rank">${myRank.rank}</div>
-    <div class="lb-name">
-      <div class="n">${esc(myRank.pharmacyName)}</div>
-      <div class="c">${esc(myRank.city)}</div>
-    </div>
-    <div class="lb-amt">${fmtMoney(myRank.totalCommission)} د.أ</div>
-  </div>` : ''}
-  `;
 }
 
 /* -------------------- قائمة مراجعة الفواتير (لوحة الأدمن) -------------------- */
