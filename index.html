@@ -375,6 +375,10 @@ let payoutDraft = null;      // { type, value }
 let payoutOtpSent = false;
 let payoutOtpDev = null;
 let payoutIntroAcked = false; // أول مرة (قبل ما يدخل بيانات الاستلام): وافق على شاشة التعريف؟
+let payoutEditUnlocked = false; // هل الحقول مفتوحة للتعديل حاليًا (بعد التحقق من الرمز)؟
+let payoutEditOtpSent = false;  // تم إرسال رمز فتح التعديل
+let payoutEditOtpDev = null;    // رمز فتح التعديل (وضع التطوير فقط، لحد ما توصل خدمة الرسائل)
+let payoutEditCode = '';        // الرمز اللي كتبه المستخدم لفتح التعديل، بيترسل مع طلب الحفظ للتحقق منه بالسيرفر
 // كود إحالة جاء من رابط دعوة (?ref=CODE) — يتعبى تلقائيًا بخطوة التسجيل لو موجود
 let incomingReferralCode = null;
 
@@ -1195,6 +1199,7 @@ function doLogout(){
   localStorage.removeItem('mm_token');
   selectedDepartment = null; adminDeptFilter = ''; adminPanelChosen = false; saleMode = null;
   resetReg(); resetForgot(); payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; payoutIntroAcked = false;
+  payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = '';
   clearAllCaches();
   goto('landing');
 }
@@ -1308,7 +1313,7 @@ async function switchTab(tab){
   if(tab==='payouts'){ confirmingPayoutId = null; }
   if(tab==='account'){ accountMsg = null; }
   if(tab==='add'){ resetAddFlow(); }
-  if(tab==='payoutInfo'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; }
+  if(tab==='payoutInfo'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = ''; }
   if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
   if(tab==='history'){
     historyFilterType = selectedDepartment==='MEDICINE' ? 'NORMAL' : null;
@@ -1807,20 +1812,58 @@ function tabPayoutInfo(){
   }
 
   if(!payoutDraft) payoutDraft = { type: savedType, value: savedValue };
+
+  // بعد أول مرة: الحقول تُعرض مقفولة (غير قابلة للتعديل) لحد ما يضغط "تعديل"
+  // ويتحقق برمز يوصله على هاتفه المسجّل
+  if(!isFirstTime && !payoutEditUnlocked){
+    const editedToday = checkPayoutEditedToday();
+    return `
+    <div class="section-title">بيانات الاستلام</div>
+    <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
+      هذه بيانات استلام مستحقاتك المالية الحالية.
+    </p>
+
+    <div class="field">
+      <label>نوع الاستلام</label>
+      <select disabled style="background:#F0F3F2;color:var(--ink-soft);">
+        <option>${payoutTypeLabel(savedType)}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>${savedType==='PHONE' ? 'رقم الهاتف لاستلام الدفعة' : 'الاسم المستعار'}</label>
+      <input type="text" value="${esc(savedValue)}" disabled style="background:#F0F3F2;color:var(--ink-soft);">
+    </div>
+
+    ${editedToday ? `
+    <div class="otp-banner" style="display:block;">
+      لقد عدّلت بيانات الاستلام اليوم بالفعل — التعديل مسموح مرة واحدة فقط يوميًا، حاول غدًا.
+    </div>` : `
+    ${!payoutEditOtpSent ? `
+    <button class="btn ghost" onclick="startPayoutEdit()">✏️ تعديل طريقة الاستلام</button>
+    ` : `
+    <p style="color:var(--ink-soft);font-size:13px;line-height:1.7;margin:0 0 12px;">
+      أدخل رمز التحقق المُرسل إلى هاتفك المسجّل لفتح التعديل.
+    </p>
+    ${payoutEditOtpDev ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(payoutEditOtpDev)}</span></div>` : ''}
+    <div class="field">
+      <label>رمز التحقق (6 أرقام)</label>
+      <input type="text" id="payoutEditOtpInput" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
+    </div>
+    <button class="btn" onclick="verifyPayoutEditOtp()">تأكيد وفتح التعديل</button>
+    <div style="text-align:center;margin-top:10px;"><button class="link-btn" onclick="startPayoutEdit()">إعادة إرسال الرمز</button></div>
+    `}
+    `}
+    `;
+  }
+
+  // التعديل مفتوح (أول مرة، أو بعد التحقق من الرمز): الحقول قابلة للتعديل بشكل طبيعي
   const type = payoutDraft.type || '';
-  const isChange = !!savedValue && (payoutDraft.type !== savedType || payoutDraft.value.trim() !== savedValue);
 
   return `
   <div class="section-title">بيانات الاستلام</div>
   <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
     حدّد الطريقة التي تريد استلام مستحقاتك المالية عليها، ليتمكن المدير من تحويل المبلغ إليك بسهولة.
   </p>
-
-  ${savedType && savedValue ? `
-  <div class="otp-banner" style="margin-bottom:16px;">
-    <span>البيانات المحفوظة حاليًا: ${payoutTypeLabel(savedType)}</span>
-    <span class="code" style="font-size:14px;letter-spacing:0;">${esc(savedValue)}</span>
-  </div>` : ''}
 
   <div class="field">
     <label>نوع الاستلام</label>
@@ -1838,17 +1881,8 @@ function tabPayoutInfo(){
       placeholder="${type==='PHONE' ? 'مثال: 07XXXXXXXX' : 'مثال: اسم المحفظة أو الحساب'}"
       value="${esc(payoutDraft.value)}" oninput="onPayoutValueInput(this.value)">
   </div>
-  ${isChange ? `
-  <div class="otp-banner" style="display:block;line-height:1.8;margin-bottom:12px;">
-    🔒 لحمايتك، تغيير بيانات الاستلام يحتاج رمز تحقق يوصلك على هاتفك المسجّل.
-  </div>` : ''}
-  ${isChange && payoutOtpSent ? `
-  ${payoutOtpDev ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(payoutOtpDev)}</span></div>` : ''}
-  <div class="field">
-    <label>رمز التحقق (6 أرقام)</label>
-    <input type="text" id="payoutOtpCode" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
-  </div>` : ''}
-  <button class="btn" id="savePayoutBtn" onclick="savePayoutInfo()">${isChange ? (payoutOtpSent ? 'تأكيد وحفظ التغيير' : 'إرسال رمز التحقق') : 'حفظ'}</button>
+  <button class="btn" id="savePayoutBtn" onclick="savePayoutInfo()">حفظ</button>
+  ${!isFirstTime ? `<div style="text-align:center;margin-top:10px;"><button class="link-btn" onclick="cancelPayoutEdit()">إلغاء</button></div>` : ''}
   ` : ''}
   `;
 }
@@ -1858,9 +1892,45 @@ function ackPayoutIntro(){
   render();
 }
 
+async function startPayoutEdit(){
+  try{
+    const r = await apiRequest('/users/me/payout/send-otp', { method:'POST' });
+    payoutEditOtpSent = true;
+    payoutEditOtpDev = r.data && r.data.devOtpCode ? r.data.devOtpCode : null;
+    toast('تم إرسال رمز التحقق إلى هاتفك');
+    render();
+  }catch(e){ toast(e.message, 'danger'); }
+}
+
+function verifyPayoutEditOtp(){
+  const el = document.getElementById('payoutEditOtpInput');
+  const code = el ? el.value.trim() : '';
+  if(!/^\d{6}$/.test(code)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
+  payoutEditCode = code;
+  payoutEditUnlocked = true;
+  payoutDraft = { type: currentUser.payoutType || '', value: currentUser.payoutValue || '' };
+  render();
+}
+
+function cancelPayoutEdit(){
+  payoutDraft = null;
+  payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = '';
+  render();
+}
+
+// حد "مرة وحدة باليوم" — هذا تخزين محلي بالمتصفح فقط، يعني ممكن يلتف عليه لو مسح بيانات
+// المتصفح أو استخدم جهاز/متصفح تاني. للحماية الحقيقية لازم نفس الحد يُطبّق من السيرفر أيضًا.
+function checkPayoutEditedToday(){
+  try{
+    return localStorage.getItem('mm_payout_last_edit_date') === toLocalDateStr(new Date());
+  }catch(e){ return false; }
+}
+function markPayoutEditedToday(){
+  try{ localStorage.setItem('mm_payout_last_edit_date', toLocalDateStr(new Date())); }catch(e){}
+}
+
 function onPayoutTypeChange(v){
   payoutDraft = { type: v, value: (v === currentUser.payoutType ? (currentUser.payoutValue||'') : '') };
-  payoutOtpSent = false; payoutOtpDev = null;
   render();
 }
 function onPayoutValueInput(v){
@@ -1877,36 +1947,23 @@ async function savePayoutInfo(){
   if(type==='PHONE' && !/^\d{10}$/.test(value)){ toast('رقم الهاتف يجب أن يتكون من 10 أرقام', 'danger'); return; }
   payoutDraft.value = value;
 
-  const savedValue = currentUser.payoutValue || '';
-  const isChange = !!savedValue && (type !== currentUser.payoutType || value !== savedValue);
   const btn = document.getElementById('savePayoutBtn');
-
+  if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
   try{
-    if(isChange && !payoutOtpSent){
-      if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
-      const r = await apiRequest('/users/me/payout/send-otp', { method:'POST' });
-      payoutOtpSent = true;
-      payoutOtpDev = r.data && r.data.devOtpCode ? r.data.devOtpCode : null;
-      toast('تم إرسال رمز التحقق إلى هاتفك');
-      render();
-      return;
-    }
-
     const body = { payoutType:type, payoutValue:value };
-    if(isChange){
-      const code = (document.getElementById('payoutOtpCode')||{value:''}).value.trim();
-      if(!/^\d{6}$/.test(code)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
-      body.code = code;
-    }
+    if(payoutEditCode){ body.code = payoutEditCode; }
     const res = await apiRequest('/users/me/payout', { method:'PATCH', json:body });
     currentUser.payoutType = res.data.payoutType;
     currentUser.payoutValue = res.data.payoutValue;
-    payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null;
+    const wasLockedEdit = !!payoutEditCode;
+    payoutDraft = null;
+    payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = '';
+    if(wasLockedEdit) markPayoutEditedToday();
     toast('تم حفظ بيانات الاستلام بنجاح');
     render();
   }catch(e){
     toast(e.message, 'danger');
-    if(btn){ btn.disabled = false; render(); }
+    if(btn){ btn.disabled = false; btn.textContent = 'حفظ'; render(); }
   }
 }
 
