@@ -1420,7 +1420,7 @@ function tabAdd(){
     </div>
   </div>` : ''}
 
-  ${addFlow.qty ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'حفظ وتسجيل العمولة', isEditing) : ''}
+  ${addFlow.qty ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'حفظ وتسجيل العمولة', false) : ''}
   `;
 }
 
@@ -1487,7 +1487,7 @@ function tabAddCompensation(){
     <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">* يجب أن يكون سعر الصنف الفري أقل من أو يساوي سعر الصنف الأساسي (${fmtMoney(mainItem.price)} دينار)</div>
   </div>` : ''}
 
-  ${addFlow.freeItemId ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'إرسال طلب التعويض', isEditing) : ''}
+  ${addFlow.freeItemId ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'إرسال طلب التعويض', true) : ''}
   `;
 }
 
@@ -1519,6 +1519,8 @@ function invoiceDateBounds(){
   return { min: toLocalDateStr(min), max: toLocalDateStr(now) };
 }
 function canSubmitInvoice(){
+  const isComp = selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA');
+  if(isComp) return !!(pendingInvoiceFile && addFlow.date);
   return !!(pendingInvoiceFile && (addFlow.invoiceNumber||'').trim() && addFlow.date);
 }
 function updateFinalBtn(){
@@ -1527,7 +1529,7 @@ function updateFinalBtn(){
 }
 function onInvoiceNumberInput(el){ addFlow.invoiceNumber = el.value; updateFinalBtn(); }
 
-function renderInvoiceStep(stepNum, submitLabel, _isEditing){
+function renderInvoiceStep(stepNum, submitLabel, isCompensation){
   const b = invoiceDateBounds();
   const dateBlock = addFlow.dateEditing ? `
     <div class="row2" style="margin-bottom:12px;">
@@ -1539,13 +1541,20 @@ function renderInvoiceStep(stepNum, submitLabel, _isEditing){
       <button type="button" onclick="toggleDateEdit()" style="border:none;background:none;color:var(--primary);cursor:pointer;font-size:13.5px;font-weight:700;text-decoration:underline;padding:0;">(تغيير التاريخ)</button>
     </div>`;
 
-  return `
-  <div class="step-block">
-    <div class="step-label"><span class="step-num">${stepNum}</span> بيانات الفاتورة</div>
+  const invoiceNumberField = isCompensation ? '' : `
     <div class="field" style="margin-bottom:12px;">
       <label>رقم الفاتورة</label>
       <input type="text" id="invoiceNumberInput" maxlength="50" placeholder="اكتب رقم الفاتورة كما هو مطبوع عليها" value="${esc(addFlow.invoiceNumber||'')}" oninput="onInvoiceNumberInput(this)">
-    </div>
+    </div>`;
+
+  const noteHtml = isCompensation
+    ? `⚠️ بعد الإرسال ما بتقدر تعدّل العملية أو تحذفها، تأكد من الصورة والتاريخ.`
+    : `⚠️ بعد الإرسال ما بتقدر تعدّل العملية أو تحذفها، تأكد من الصورة ورقم الفاتورة والكمية.`;
+
+  return `
+  <div class="step-block">
+    <div class="step-label"><span class="step-num">${stepNum}</span> بيانات الفاتورة</div>
+    ${invoiceNumberField}
     ${dateBlock}
     <div class="row2" style="margin-bottom:10px;">
       <button type="button" class="btn sm" style="flex:1;" onclick="document.getElementById('invoiceFileCamera').click()">📷 التقط صورة</button>
@@ -1558,8 +1567,7 @@ function renderInvoiceStep(stepNum, submitLabel, _isEditing){
       <img id="invoicePreview" class="preview-img" src="${pendingInvoicePreview}" style="display:block">
     </div>` : ''}
     <div style="font-size:12px;color:var(--ink-soft);line-height:1.7;margin-top:10px;">
-      ⚠️ بعد الإرسال ما بتقدر تعدّل العملية أو تحذفها، تأكد من الصورة ورقم الفاتورة والكمية.<br>
-      🗓️ العملية بتُحسب بشهر إرسالها (آخر موعد 11:59 مساءً آخر يوم بالشهر بتوقيت الأردن).
+      ${noteHtml}
     </div>
     <button class="btn" id="finalSaveBtn" style="margin-top:12px;" ${canSubmitInvoice()?'':'disabled'} onclick="saveInvoiceAndFinish()">${submitLabel}</button>
   </div>`;
@@ -1601,10 +1609,10 @@ async function handleInvoiceFile(input){
 
 async function saveInvoiceAndFinish(){
   if(!pendingInvoiceFile){ toast('الرجاء إرفاق صورة الفاتورة', 'danger'); return; }
-  const invNo = (addFlow.invoiceNumber||'').trim();
-  if(!invNo){ toast('الرجاء إدخال رقم الفاتورة', 'danger'); return; }
 
   const isCompensation = selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA');
+  const invNo = (addFlow.invoiceNumber||'').trim();
+  if(!isCompensation && !invNo){ toast('الرجاء إدخال رقم الفاتورة', 'danger'); return; }
 
   const btn = document.getElementById('finalSaveBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإرسال...'; }
