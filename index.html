@@ -1815,7 +1815,14 @@ function computeMyPayoutSummary(){
   const transferredSales = approved.filter(s=>s.paid);
   const transferred = transferredSales.reduce((a,s)=>a+Number(s.commissionAmount),0);
   const lastTransfer = transferredSales.sort((a,b)=> new Date(b.paidAt)-new Date(a.paidAt))[0];
-  return { pending, transferred, lastTransferAt: lastTransfer ? lastTransfer.paidAt : null, hasAnySale: mySales.length>0 };
+  // فواتير لسا ما راجعها الأدمن (قبول/رفض) — عمولة تقديرية غير مؤكدة بعد
+  const underReview = mySales.filter(s=>s.status==='PENDING');
+  const underReviewAmount = underReview.reduce((a,s)=>a+Number(s.commissionAmount),0);
+  return {
+    pending, transferred, lastTransferAt: lastTransfer ? lastTransfer.paidAt : null,
+    hasAnySale: mySales.length>0,
+    underReviewAmount, underReviewCount: underReview.length,
+  };
 }
 
 /* -------------------- تبويب: بيانات الاستلام -------------------- */
@@ -2019,23 +2026,33 @@ function tabEarnings(){
   const pendingBlock = summary.pending>0 ? `
   <div class="history-summary" style="margin-bottom:10px;">
     <div>
-      <div class="lbl">إجمالي العمولات المستحقة</div>
+      <div class="lbl">إجمالي العمولات المستحقة (تمت الموافقة عليها)</div>
       <div class="val num">${fmtMoney(summary.pending)} د.أ</div>
     </div>
     <div class="cnt"><span class="badge pending">تم التأكيد، بانتظار تحويل المبلغ</span></div>
   </div>` : `
   <div class="history-summary" style="margin-bottom:10px;">
     <div>
-      <div class="lbl">إجمالي العمولات المستحقة</div>
+      <div class="lbl">إجمالي العمولات المستحقة (تمت الموافقة عليها)</div>
       <div class="val num">0.000 د.أ</div>
     </div>
-    <div class="cnt"><span class="badge" style="background:var(--card2);color:var(--ink-soft);">لا يوجد مبلغ مستحق حاليًا</span></div>
+    <div class="cnt"><span class="badge ok">لا يوجد مبلغ مستحق حاليًا</span></div>
   </div>`;
+
+  const underReviewBlock = summary.underReviewCount>0 ? `
+  <div class="history-summary" style="margin-bottom:10px;">
+    <div>
+      <div class="lbl">العمولات الحالية (غير مؤكدة بعد)</div>
+      <div class="val num">${fmtMoney(summary.underReviewAmount)} د.أ</div>
+    </div>
+    <div class="cnt"><span class="badge" style="background:var(--card2);color:var(--ink-soft);">بانتظار موافقة الإدارة</span></div>
+  </div>` : '';
 
   return `
   <div class="section-title">مستحقاتي</div>
   ${noPayoutInfoNote}
   ${pendingBlock}
+  ${underReviewBlock}
   ${summary.transferred>0 ? `
   <div class="history-summary" style="background:linear-gradient(155deg,#1D7A4C,#175A32);margin-bottom:18px;">
     <div>
@@ -2044,10 +2061,6 @@ function tabEarnings(){
     </div>
     <div class="cnt"><span class="badge ok">✓ تم تحويل المبلغ</span></div>
   </div>` : ''}
-
-  <div class="otp-banner" style="display:block;line-height:1.8;">
-    💡 يتم تحويل المستحقات <b>مرة واحدة كل شهر (يوم 1)</b> عن فواتير الشهر الماضي المقبولة. الفواتير المرسلة من أول الشهر الجديد بتنحسب بالدفعة اللي بعدها.
-  </div>
   `;
 }
 
