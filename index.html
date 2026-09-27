@@ -462,8 +462,11 @@ let statsFilterActive = false;
 
 // الدفعات الشهرية (أدمن)
 let payoutsData = null;        // رد GET /payouts
-let payoutsMonth = '';         // YYYY-MM ('' = الافتراضي: الشهر الماضي)
-let previousDuesCache = null;  // رد GET /payouts/me (تبويب: مستحقاتي السابقة)
+let payoutsScope = 'live';     // 'live' = كل المستحق حاليًا | 'last_month' = الشهر التقويمي اللي فات
+let previousDuesCache = null;  // رد GET /payouts/me (تبويب الصيدلي: التحويلات السابقة)
+let payoutsHistoryData = null; // رد GET /payouts/history (تبويب الأدمن: الدفعات الشهرية السابقة)
+let payoutsHistoryFilter = { city:'', search:'' };
+let payoutsHistoryFilterActive = false;
 let confirmingPayoutId = null; // الصيدلي اللي بنأكد تحويله حاليًا
 let accountMsg = null;         // رسالة تبويب الحساب (تغيير كلمة السر)
 
@@ -1209,8 +1212,9 @@ function clearAllCaches(){
   CATEGORIES = []; mySalesCache = null; adminSalesCache = null; pharmacistsCache = null;
   historyFilterType = null; showFreeItemsSummary = false; referralSummaryCache = null;
   adminFilterActive = false; statsFilterActive = false;
-  payoutsData = null; payoutsMonth = ''; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
+  payoutsData = null; payoutsScope = 'live'; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
   adminPharmacistFilter = null; previousDuesCache = null;
+  payoutsHistoryData = null; payoutsHistoryFilter = { city:'', search:'' }; payoutsHistoryFilterActive = false;
   compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
   compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
   compReportsRows = { ASIL: null, ZAROZA: null }; compReportsActive = { ASIL:false, ZAROZA:false };
@@ -1245,7 +1249,7 @@ function adminRoleLabel(_u){
 function screenAppShell(){
   const isAdmin = currentUser.type === 'admin';
   const isSuperAdmin = isAdmin && currentUser.role === 'SUPER_ADMIN';
-  const wideTabs = ['admin','reports','users','stats','payouts','account','compReportsAsil','compReportsZaroza'];
+  const wideTabs = ['admin','reports','users','stats','payouts','payoutsHistory','account','compReportsAsil','compReportsZaroza'];
   const isWide = wideTabs.includes(activeTab);
   const nameLine = esc(isAdmin ? currentUser.fullName : currentUser.pharmacyName);
   const subLine = isAdmin ? (adminRoleLabel(currentUser) + ' · لوحة التحكم') : (esc(currentUser.fullName) + ' · ' + esc(currentUser.city));
@@ -1287,6 +1291,7 @@ function screenAppShell(){
     ${activeTab==='users' ? tabCategoriesMgmt() : ''}
     ${activeTab==='stats' ? tabPharmacists() : ''}
     ${activeTab==='payouts' ? tabPayouts() : ''}
+    ${activeTab==='payoutsHistory' ? tabPayoutsHistory() : ''}
     ${activeTab==='admin' ? tabAdmin() : ''}
     ${activeTab==='account' ? tabAccount() : ''}
   </div>
@@ -1296,10 +1301,11 @@ function screenAppShell(){
       ${!isAdmin ? `<button class="${activeTab==='history'?'active':''}" onclick="switchTab('history')"><span class="ic">🧾</span>السجل</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='payoutInfo'?'active':''}" onclick="switchTab('payoutInfo')"><span class="ic">💳</span>بيانات الاستلام</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='earnings'?'active':''}" onclick="switchTab('earnings')"><span class="ic">💰</span>مستحقاتي</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>مستحقاتي السابقة</button>` : ''}
+      ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>التحويلات السابقة</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='payoutsHistory'?'active':''}" onclick="switchTab('payoutsHistory')"><span class="ic">📜</span>الدفعات الشهرية السابقة</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsAsil'?'active':''}" onclick="switchTab('compReportsAsil')"><span class="ic">🔄</span>تعويض الأصيل</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='users'?'active':''}" onclick="switchTab('users')"><span class="ic">🗂️</span>الأصناف</button>` : ''}
@@ -1317,6 +1323,7 @@ async function switchTab(tab){
   if(tab==='account'){ accountMsg = null; }
   if(tab==='add'){ resetAddFlow(); }
   if(tab==='payoutInfo'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = ''; }
+  if(tab==='payouts'){ confirmingPayoutId = null; }
   if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
   if(tab==='history'){
     historyFilterType = selectedDepartment==='MEDICINE' ? 'NORMAL' : null;
@@ -1344,6 +1351,7 @@ async function loadTabData(tab){
     if(tab==='users'){ await loadCategories(); render(); }
     if(tab==='stats'){ await loadPharmacists(); render(); }
     if(tab==='payouts'){ await loadPayouts(); render(); }
+    if(tab==='payoutsHistory'){ await loadPayoutsHistory(); render(); }
     if(tab==='reports' && !pharmacistsCache){ await loadPharmacists(); render(); }
     if((tab==='compReportsAsil' || tab==='compReportsZaroza') && !pharmacistsCache){ await loadPharmacists(); render(); }
   }catch(e){ toast(e.message, 'danger'); }
@@ -1373,10 +1381,18 @@ async function loadPreviousDues(){
   previousDuesCache = res.data.rows;
 }
 async function loadPayouts(){
-  const qs = payoutsMonth ? ('?month=' + payoutsMonth) : '';
-  const res = await apiRequest('/payouts' + qs);
+  const res = await apiRequest('/payouts?scope=' + payoutsScope);
   payoutsData = res.data;
-  payoutsMonth = payoutsData.month;
+}
+async function loadPayoutsHistory(){
+  const params = new URLSearchParams();
+  if(payoutsHistoryFilterActive){
+    if(payoutsHistoryFilter.city) params.set('city', payoutsHistoryFilter.city);
+    if(payoutsHistoryFilter.search) params.set('search', payoutsHistoryFilter.search);
+  }
+  const qs = params.toString() ? ('?' + params.toString()) : '';
+  const res = await apiRequest('/payouts/history' + qs);
+  payoutsHistoryData = res.data;
 }
 
 /* -------------------- تبويب: إضافة / تعديل عملية بيع -------------------- */
@@ -2038,34 +2054,30 @@ function tabEarnings(){
 /* -------------------- تبويب: مستحقاتي السابقة -------------------- */
 function tabPreviousDues(){
   if(previousDuesCache===null){
-    return `<div class="section-title">مستحقاتي السابقة</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+    return `<div class="section-title">التحويلات السابقة</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
   const rows = previousDuesCache;
   if(rows.length===0){
     return `
-    <div class="section-title">مستحقاتي السابقة</div>
+    <div class="section-title">التحويلات السابقة</div>
     <div class="empty-state">
       <div class="ic">🗓️</div>
-      <div class="t">لا يوجد سجل بعد</div>
-      <div class="d">أول ما تنقبل عملية بيع، بيظهر هون سجل كل شهر بقيمته وحالته.</div>
+      <div class="t">لا يوجد تحويلات بعد</div>
+      <div class="d">أول ما تحوّلك الإدارة مبلغ، بيظهر هون سجل كل شهر بقيمته.</div>
     </div>`;
   }
   return `
-  <div class="section-title">مستحقاتي السابقة</div>
+  <div class="section-title">التحويلات السابقة</div>
   <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 16px;line-height:1.7;">
-    سجل مستحقاتك شهرًا بشهر — القيمة وحالة التحويل.
+    كل مبلغ تم تحويله لك فعليًا، شهرًا بشهر.
   </p>
   ${rows.map(r=>`
     <div class="ticket">
       <div class="sale-row">
         <div style="flex:1;">
           <div class="cat">${fmtMonth(r.month)}</div>
-          <div class="meta">${r.salesCount} عملية${r.status==='PAID' && r.paidAt ? ' · تم التحويل ' + fmtDate(r.paidAt) : ''}${r.inProgress ? ' · لسا قيد التجميع' : ''}</div>
-          <div style="margin-top:5px;">${
-            r.status==='PAID'
-              ? '<span class="badge ok">✓ تم التحويل</span>'
-              : (r.inProgress ? '<span class="badge" style="background:var(--card2);color:var(--ink-soft);">قيد التجميع</span>' : '<span class="badge pending">بانتظار التحويل</span>')
-          }</div>
+          <div class="meta">${r.salesCount} عملية · تم التحويل ${fmtDate(r.paidAt)}${r.reference ? ' · مرجع: ' + esc(r.reference) : ''}</div>
+          <div style="margin-top:5px;"><span class="badge ok">✓ تم التحويل</span></div>
         </div>
         <div class="commission">${fmtMoney(r.amount)} د.أ</div>
       </div>
@@ -2687,113 +2699,91 @@ function tabPayouts(){
     return `<div class="section-title">الدفعات الشهرية</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
   const t = d.totals;
+  const isLastMonth = d.scope === 'last_month';
+  const lastMonthLabel = fmtMonth(shiftMonthKey(currentMonthKey(), -1));
+
   const warn = t.pendingInvoices > 0 ? `
   <div class="dup-warning" style="font-size:14px;line-height:1.8;padding:14px;margin-bottom:14px;">
-    ⚠️ <b>تنبيه:</b> في <b>${t.pendingInvoices}</b> فاتورة لسا معلّقة (بانتظار مراجعتك) عند <b>${t.pharmacistsWithPending}</b> صيدلي من هذا الشهر أو أقدم.
-    راجعها قبل التحويل، لأن أي فاتورة بتنقبل بعد ما تأكد التحويل لصيدليها بتروح تلقائيًا لدفعة الشهر اللي بعده.
-    <br>(دوس على "مراجعة الفواتير" جنب الصيدلي لتشوف فواتيره بالقسمين.)
-  </div>` : '';
-  const closedNote = d.isClosed ? '' : `
-  <div class="dup-warning" style="margin-bottom:14px;">🕒 هذا الشهر لسا ما انتهى (ينتهي 11:59 مساءً آخر يوم بتوقيت الأردن) — الأرقام لسا بتتغيّر ولا يمكن تأكيد التحويل الآن.</div>`;
-  // معاينة الشهر الحالي (المفتوح) لما تكون الصفحة عم تعرض شهر مغلق فاضي أو غير الحالي —
-  // بتفسّر للأدمن ليش ما بيشوف عمليات جديدة (لأنها لسا عم تتجمّع بشهر ما انتهى بعد)
-  const currentPreview = d.currentMonthPreview ? `
-  <div class="otp-banner" style="display:block;margin-bottom:14px;line-height:1.8;">
-    <span>💡 الشهر الحالي (${fmtMonth(d.currentMonthPreview.month)}) لسا مفتوح وعم يتجمّع فيه <b class="num">${fmtMoney(d.currentMonthPreview.amount)} د.أ</b> عند <b class="num">${d.currentMonthPreview.pharmacistsCount}</b> صيدلي — بيصير قابل للتحويل بعد ما ينتهي الشهر.</span>
-    <button class="btn sm" style="margin-top:8px;" onclick="jumpToCurrentPayoutsMonth('${d.currentMonthPreview.month}')">معاينة هذا الشهر</button>
+    ⚠️ <b>تنبيه:</b> في <b>${t.pendingInvoices}</b> فاتورة لسا معلّقة (بانتظار مراجعتك) عند <b>${t.pharmacistsWithPending}</b> صيدلي.
+    راجعها قبل التحويل. (دوس على "مراجعة الفواتير" جنب الصيدلي لتشوف فواتيره بالقسمين.)
   </div>` : '';
 
   return `
   <div class="admin-section-head">
-    <div class="section-title" style="margin:0;">الدفعات الشهرية للصيادلة</div>
+    <div class="section-title" style="margin:0;">${isLastMonth ? ('دفعات ' + lastMonthLabel) : 'المستحق حاليًا'}</div>
     ${d.rows.length ? `<button class="export-btn" onclick="exportPayoutsToExcel()">⬇ تصدير Excel</button>` : ''}
   </div>
   <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 14px;line-height:1.7;">
-    مجموع العمولات المقبولة لكل صيدلي عن هذا الشهر (فواتير أُرسلت قبل نهاية الشهر بتوقيت الأردن)، بالقسمين. الفواتير المرسلة من 1 الشهر التالي بتروح تلقائيًا للدفعة اللي بعدها.
+    ${isLastMonth
+      ? `فواتير ${lastMonthLabel} فقط — من أول يوم الساعة 12:00 صباحًا لغاية آخر يوم 11:59 مساءً بتوقيت الأردن.`
+      : 'كل العمولات المعتمدة وغير المحوّلة لحد هذه اللحظة، بدون أي قيد على تاريخ الفاتورة. التحويل متاح بأي وقت.'}
   </p>
 
   <div class="admin-section">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
-      <button class="btn ghost sm" style="flex:0 0 auto;" onclick="changePayoutsMonth(-1)">‹ الشهر السابق</button>
-      <div style="text-align:center;font-weight:800;font-size:16px;">${fmtMonth(d.month)}</div>
-      <button class="btn ghost sm" style="flex:0 0 auto;" onclick="changePayoutsMonth(1)">الشهر التالي ›</button>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:14px;">
+      ${isLastMonth
+        ? `<button class="btn ghost sm" onclick="setPayoutsScope('live')">‹ رجوع للمستحق حاليًا</button>`
+        : `<button class="btn ghost sm" onclick="setPayoutsScope('last_month')">دفعات الشهر السابق</button>`}
     </div>
 
     ${warn}
-    ${closedNote}
-    ${currentPreview}
 
     <div class="stat-grid">
       <div class="stat-card"><div class="v num">${fmtMoney(t.unpaidAmount)}</div><div class="l">المطلوب تحويله (د.أ)</div></div>
       <div class="stat-card"><div class="v num">${t.unpaidCount}</div><div class="l">صيدلي بانتظار التحويل</div></div>
-      <div class="stat-card"><div class="v num">${fmtMoney(t.paidAmount)}</div><div class="l">تم تحويله (د.أ) — ${t.paidCount} صيدلي</div></div>
     </div>
 
-    ${d.rows.length===0 ? `<div class="empty-state"><div class="ic">💰</div><div class="t">لا توجد مستحقات لهذا الشهر</div></div>` : `
+    ${d.rows.length===0 ? `<div class="empty-state"><div class="ic">💰</div><div class="t">${isLastMonth ? ('لا توجد مستحقات لـ' + lastMonthLabel) : 'لا توجد مستحقات حاليًا'}</div></div>` : `
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr>
-          <th>الصيدلاني / الصيدلية</th><th class="num">المبلغ (د.أ)</th><th>الاستلام</th><th>تنبيهات</th><th>الحالة / الإجراء</th>
+          <th>الصيدلاني / الصيدلية</th><th class="num">المبلغ (د.أ)</th><th>الاستلام</th><th>تنبيهات</th><th>الإجراء</th>
         </tr></thead>
         <tbody>
-        ${d.rows.map(r=>renderPayoutRow(r, d)).join('')}
+        ${d.rows.map(r=>renderPayoutRow(r)).join('')}
         </tbody>
       </table>
     </div>`}
   </div>`;
 }
 
-function renderPayoutRow(r, d){
+function renderPayoutRow(r){
   const alerts = [];
-  if(r.pendingCount > 0 && r.status !== 'PAID'){
+  if(r.pendingCount > 0){
     alerts.push(`<div class="dup-warning" style="margin:0 0 6px;padding:6px 8px;">⚠️ ${r.pendingCount} فاتورة معلّقة <button class="btn sm" style="padding:3px 8px;margin-right:4px;" onclick="reviewPharmacist('${r.pharmacistId}')">مراجعة الفواتير</button></div>`);
-  }
-  if(r.lateSalesCount > 0){
-    alerts.push(`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;">منها ${r.lateSalesCount} متأخرة من أشهر سابقة (${fmtMoney(r.lateAmount)} د.أ)</div>`);
   }
   if(r.payoutInfoChangedRecently){
     alerts.push(`<div style="font-size:12px;color:var(--danger);font-weight:700;margin-bottom:4px;">🔔 تغيّرت بيانات الاستلام مؤخرًا — تأكد منها</div>`);
-  }
-  if(r.status==='PAID' && r.carriedOverCount > 0){
-    alerts.push(`<div style="font-size:12px;color:var(--ink-soft);">+ ${r.carriedOverCount} عملية (${fmtMoney(r.carriedOverAmount)} د.أ) انقبلت بعد الدفعة — بتروح للشهر اللي بعده</div>`);
   }
   if(!r.isActive){
     alerts.push(`<div style="font-size:12px;color:var(--danger);">الحساب موقوف</div>`);
   }
 
-  let action = '—';
-  if(r.status === 'PAID'){
-    const p = r.payout;
-    action = `<span class="badge ok">✓ تم التحويل</span><div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">${fmtDate(p.paidAt)}${p.reference ? ' · مرجع: ' + esc(p.reference) : ''}</div>`;
-  } else if(r.status === 'UNPAID'){
-    action = d.isClosed
-      ? `<button class="btn approve sm" onclick="startConfirmPayout('${r.pharmacistId}')">✓ تأكيد التحويل</button>`
-      : `<span class="badge pending">بانتظار انتهاء الشهر</span>`;
-  } else {
-    action = `<span style="color:var(--ink-soft);font-size:12.5px;">لا مستحقات</span>`;
-  }
-
   const split = (r.medicineAmount>0 || r.cosmeticsAmount>0)
     ? `<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">أدوية ${fmtMoney(r.medicineAmount)} · كوزمتك ${fmtMoney(r.cosmeticsAmount)}</div>` : '';
 
+  const action = r.amount > 0
+    ? `<button class="btn approve sm" onclick="startConfirmPayout('${r.pharmacistId}')">✓ تأكيد التحويل</button>`
+    : `<span style="color:var(--ink-soft);font-size:12.5px;">لا يوجد مبلغ جاهز</span>`;
+
   const row = `<tr>
     <td><b>${esc(r.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(r.pharmacyName)} · <span class="num">${esc(r.phoneNumber)}</span></div></td>
-    <td class="num"><b>${fmtMoney(r.amount)}</b>${split}<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">${r.salesCount} عملية</div></td>
+    <td class="num"><b>${fmtMoney(r.amount)}</b>${split}${r.salesCount ? `<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">${r.salesCount} عملية</div>` : ''}</td>
     <td>${r.payoutValue ? `${payoutTypeLabel(r.payoutType)}<div class="num" style="font-weight:700;">${esc(r.payoutValue)}</div>` : `<span style="color:var(--danger);font-size:12.5px;">لم يدخل بيانات الاستلام</span>`}</td>
     <td>${alerts.join('') || '—'}</td>
     <td>${action}</td>
   </tr>`;
 
-  if(confirmingPayoutId !== r.pharmacistId) return row;
+  if(confirmingPayoutId !== r.pharmacistId || r.amount<=0) return row;
 
   const noInfo = !r.payoutValue;
   return row + `<tr><td colspan="5" style="background:var(--accent-tint);">
     <div style="padding:6px 4px;line-height:1.9;">
-      <div style="font-weight:800;margin-bottom:6px;">تأكيد تحويل ${fmtMonth(d.month)}</div>
+      <div style="font-weight:800;margin-bottom:6px;">تأكيد التحويل</div>
       <div>الصيدلاني: <b>${esc(r.fullName)}</b> — ${esc(r.pharmacyName)}</div>
       <div>المبلغ المطلوب تحويله: <b class="num" style="font-size:17px;">${fmtMoney(r.amount)} د.أ</b> (${r.salesCount} عملية)</div>
       <div>${payoutTypeLabel(r.payoutType)}: <b class="num">${esc(r.payoutValue || '—')}</b></div>
-      ${r.pendingCount>0 ? `<div class="dup-warning" style="margin:8px 0;">⚠️ عند هذا الصيدلي ${r.pendingCount} فاتورة معلّقة لسا ما انراجعت. لو أكدت الآن وانقبلت بعدين، بتنحسب بدفعة الشهر اللي بعده.</div>` : ''}
+      ${r.pendingCount>0 ? `<div class="dup-warning" style="margin:8px 0;">⚠️ عند هذا الصيدلي ${r.pendingCount} فاتورة معلّقة لسا ما انراجعت — القيمة هون ما بتشملها.</div>` : ''}
       ${noInfo ? `<div class="dup-warning" style="margin:8px 0;">لا يمكن التأكيد: الصيدلي لم يدخل بيانات استلام المستحقات.</div>` : ''}
       <div class="field" style="margin:8px 0;">
         <label>رقم عملية التحويل (اختياري)</label>
@@ -2808,15 +2798,8 @@ function renderPayoutRow(r, d){
   </td></tr>`;
 }
 
-async function changePayoutsMonth(delta){
-  const cur = payoutsData ? payoutsData.month : shiftMonthKey(currentMonthKey(), -1);
-  payoutsMonth = shiftMonthKey(cur, delta);
-  payoutsData = null; confirmingPayoutId = null;
-  render();
-  try{ await loadPayouts(); render(); }catch(e){ toast(e.message, 'danger'); }
-}
-async function jumpToCurrentPayoutsMonth(monthKey){
-  payoutsMonth = monthKey;
+async function setPayoutsScope(scope){
+  payoutsScope = scope;
   payoutsData = null; confirmingPayoutId = null;
   render();
   try{ await loadPayouts(); render(); }catch(e){ toast(e.message, 'danger'); }
@@ -2833,7 +2816,7 @@ async function confirmPayout(pharmacistId){
   try{
     await apiRequest('/payouts/confirm', { method:'POST', json:{
       pharmacistId,
-      month: payoutsData.month,
+      scope: payoutsScope,
       expectedAmount: Number(r.amount),
       expectedSalesCount: r.salesCount,
       ...(reference ? { reference } : {})
@@ -2844,7 +2827,7 @@ async function confirmPayout(pharmacistId){
     render();
   }catch(e){
     toast(e.message, 'danger');
-    if(e.code === 'AMOUNT_CHANGED' || e.code === 'ALREADY_PAID'){
+    if(e.code === 'AMOUNT_CHANGED'){
       confirmingPayoutId = null;
       try{ await loadPayouts(); render(); }catch(_e){}
     }
@@ -2860,17 +2843,76 @@ function exportPayoutsToExcel(){
     'المبلغ (دينار)': Number(Number(r.amount).toFixed(3)),
     'أدوية': Number(Number(r.medicineAmount).toFixed(3)),
     'كوزمتك': Number(Number(r.cosmeticsAmount).toFixed(3)),
+    'عدد العمليات': r.salesCount,
     'نوع الاستلام': payoutTypeLabel(r.payoutType),
     'الاسم المستعار / رقم الهاتف': r.payoutValue || '',
     'فواتير معلّقة': r.pendingCount,
-    'الحالة': r.status==='PAID' ? 'تم التحويل' : (r.status==='UNPAID' ? 'بانتظار التحويل' : 'لا مستحقات')
   }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws['!cols'] = [{wch:20},{wch:14},{wch:22},{wch:14},{wch:12},{wch:12},{wch:14},{wch:24},{wch:12},{wch:16}];
+  ws['!cols'] = [{wch:20},{wch:14},{wch:22},{wch:14},{wch:12},{wch:12},{wch:12},{wch:14},{wch:24},{wch:12}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'الدفعات');
-  XLSX.writeFile(wb, `دفعات-${payoutsData.month}.xlsx`);
+  const label = payoutsScope==='last_month' ? 'الشهر-السابق' : 'الآن';
+  XLSX.writeFile(wb, `مستحقات-${label}.xlsx`);
   toast('تم تصدير ملف Excel');
+}
+
+/* -------------------- تبويب: الدفعات الشهرية السابقة (سجل التحويلات) -------------------- */
+function tabPayoutsHistory(){
+  const d = payoutsHistoryData;
+  return `
+  <div class="section-title">الدفعات الشهرية السابقة</div>
+  <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 16px;line-height:1.7;">سجل كل التحويلات اللي صارت فعليًا لكل الصيادلة.</p>
+
+  <div class="admin-section" style="margin-bottom:16px;">
+    <div class="row2" style="margin-bottom:10px;">
+      <div class="field" style="margin-bottom:0;"><label>المنطقة / المدينة</label><input type="text" id="payoutsHistCity" placeholder="مثال: عمّان" value="${esc(payoutsHistoryFilter.city)}"></div>
+      <div class="field" style="margin-bottom:0;"><label>اسم الصيدلية</label><input type="text" id="payoutsHistSearch" placeholder="ابحث بالاسم" value="${esc(payoutsHistoryFilter.search)}"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn sm" onclick="applyPayoutsHistoryFilter()">بحث</button>
+      ${payoutsHistoryFilterActive ? `<button class="btn ghost sm" onclick="clearPayoutsHistoryFilter()">إلغاء الفلتر</button>` : ''}
+    </div>
+  </div>
+
+  ${!d ? `<p style="color:var(--ink-soft);">جارِ التحميل...</p>` : (d.items.length===0 ? `
+  <div class="empty-state"><div class="ic">📜</div><div class="t">لا يوجد سجل مطابق</div></div>` : `
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>الصيدلاني / الصيدلية</th><th>المنطقة</th><th class="num">المبلغ (د.أ)</th><th>التاريخ</th><th>رقم العملية</th><th>حوّله</th></tr></thead>
+      <tbody>
+      ${d.items.map(p=>`<tr>
+        <td><b>${esc(p.pharmacist.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(p.pharmacist.pharmacyName)} · <span class="num">${esc(p.pharmacist.phoneNumber)}</span></div></td>
+        <td>${esc(p.pharmacist.city)}</td>
+        <td class="num"><b>${fmtMoney(p.amount)}</b><div style="font-size:11.5px;color:var(--ink-soft);">${p.salesCount} عملية</div></td>
+        <td>${fmtDate(p.paidAt)}</td>
+        <td class="num">${p.reference ? esc(p.reference) : '—'}</td>
+        <td>${esc(p.paidBy.fullName)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:10px;">${d.items.length} من ${d.pagination.total}</div>
+  `)}
+  `;
+}
+
+async function applyPayoutsHistoryFilter(){
+  payoutsHistoryFilter = {
+    city: document.getElementById('payoutsHistCity').value.trim(),
+    search: document.getElementById('payoutsHistSearch').value.trim(),
+  };
+  payoutsHistoryFilterActive = !!(payoutsHistoryFilter.city || payoutsHistoryFilter.search);
+  payoutsHistoryData = null;
+  render();
+  try{ await loadPayoutsHistory(); render(); }catch(e){ toast(e.message, 'danger'); }
+}
+async function clearPayoutsHistoryFilter(){
+  payoutsHistoryFilter = { city:'', search:'' };
+  payoutsHistoryFilterActive = false;
+  payoutsHistoryData = null;
+  render();
+  try{ await loadPayoutsHistory(); render(); }catch(e){ toast(e.message, 'danger'); }
 }
 
 /* -------------------- تبويب: التقارير -------------------- */
