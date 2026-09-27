@@ -1372,12 +1372,12 @@ function screenAppShell(){
       ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>التحويلات السابقة</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='payoutsHistory'?'active':''}" onclick="switchTab('payoutsHistory')"><span class="ic">📜</span>الدفعات الشهرية السابقة</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsAsil'?'active':''}" onclick="switchTab('compReportsAsil')"><span class="ic">🔄</span>تعويض الأصيل</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='users'?'active':''}" onclick="switchTab('users')"><span class="ic">🗂️</span>الأصناف</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='stats'?'active':''}" onclick="switchTab('stats')"><span class="ic">📈</span>العملاء المسجلون</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='payoutsHistory'?'active':''}" onclick="switchTab('payoutsHistory')"><span class="ic">📜</span>الدفعات الشهرية السابقة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='account'?'active':''}" onclick="switchTab('account')"><span class="ic">🔑</span>حسابي</button>` : ''}
     </div>
