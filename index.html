@@ -186,6 +186,42 @@
   .history-summary .cnt{text-align:left;font-size:12px;opacity:.9;}
   .history-summary .cnt b{font-family:'IBM Plex Mono';font-size:16px;display:block;}
 
+  /* ---------- ملخص السجل بـ٣ أرقام (مقبولة/قيد المراجعة/مرفوضة) ---------- */
+  .hs-grid{display:flex;gap:8px;margin-bottom:16px;}
+  .hs-box{flex:1;border-radius:14px;padding:12px 10px;text-align:center;}
+  .hs-box .lbl{font-size:11px;font-weight:700;opacity:.9;}
+  .hs-box .val{font-family:'Cairo';font-weight:800;font-size:16.5px;margin-top:4px;}
+  .hs-box.ok{background:linear-gradient(155deg,var(--primary),var(--primary-dark));color:#fff;}
+  .hs-box.pending{background:var(--accent-tint);color:#8A6512;}
+  .hs-box.rejected{background:#FBE4E1;color:#A3352A;}
+
+  /* ---------- فلاتر الـ pills (نوع الفاتورة / الحالة) ---------- */
+  .filter-pills{display:flex;gap:7px;overflow-x:auto;padding:1px 1px 8px;margin-bottom:2px;-ms-overflow-style:none;scrollbar-width:none;}
+  .filter-pills::-webkit-scrollbar{display:none;}
+  .pill{
+    flex:none;padding:8px 14px;border-radius:20px;font-size:12.5px;font-weight:700;white-space:nowrap;
+    background:var(--primary-tint);color:var(--primary-dark);border:1.5px solid transparent;transition:background .15s,color .15s;
+  }
+  .pill.active{background:var(--primary);color:#fff;}
+  .pill.sub{background:var(--surface);border-color:var(--border);color:var(--ink-soft);}
+  .pill.sub.active.APPROVED{background:#1D7A4C;border-color:#1D7A4C;color:#fff;}
+  .pill.sub.active.PENDING{background:#B98617;border-color:#B98617;color:#fff;}
+  .pill.sub.active.REJECTED{background:var(--danger);border-color:var(--danger);color:#fff;}
+  .pill.sub.active.ALL{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+  /* ---------- عنوان فاصل بين الأيام/الأشهر بقائمة السجل ---------- */
+  .date-sep{font-size:12.5px;font-weight:800;color:var(--ink-soft);margin:20px 2px 10px;display:flex;align-items:center;gap:8px;}
+  .date-sep:first-of-type{margin-top:0;}
+  .date-sep::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* ---------- صندوق سبب الرفض ---------- */
+  .reject-box{
+    margin-top:8px;background:#FBE4E1;border:1px solid #F2B8B0;border-radius:10px;
+    padding:9px 11px;font-size:12.5px;color:#7A2A21;display:flex;gap:7px;align-items:flex-start;
+  }
+  .reject-box .ic{flex:none;font-size:14px;line-height:1.3;}
+  .reject-box b{font-weight:800;}
+
   .sale-row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
   .sale-row .cat{font-weight:700;font-size:14.5px;}
   .sale-row .meta{font-size:12px;color:var(--ink-soft);margin-top:3px;}
@@ -391,32 +427,47 @@ let lastSubmittedSale = null;
 // سجل المبيعات (بعد الإرسال ما في تعديل ولا حذف — الأدمن بيقبل أو بيرفض، ولو غلطت بترسل عملية جديدة)
 let mySalesCache = null;
 
-// فلتر تبويب "السجل": الصيدلي لازم يحدد نوع الفواتير قبل ما تظهر له
-// null = لسا ما اختار (بتظهر شاشة الاختيار) / 'NORMAL' / 'ASIL' / 'ZAROZA'
-let historyFilterType = null;
+// فلتر تبويب "السجل" — Pills فوق القائمة (بدل شاشة اختيار منفصلة)، وبيتذكر آخر اختيار خلال الجلسة
+// نوع الفاتورة: 'ALL' (بالكوزمتك بس) / 'NORMAL' / 'ASIL' / 'ZAROZA' — بقسم الأدوية دايمًا 'NORMAL'
+let historyFilterType = 'ALL';
+// حالة الفاتورة: 'ALL' / 'APPROVED' / 'PENDING' / 'REJECTED'
+let historyStatusFilter = 'ALL';
 // إظهار/إخفاء ملخص القطع الفري المستحقة (لصفحات التعويض فقط)
 let showFreeItemsSummary = false;
-const HISTORY_FILTERS = [
-  { value:'NORMAL', label:'المبيعات العادية', icon:'🧾' },
-  { value:'ASIL',   label:'فواتير تعويض الأصيل', icon:'🔄' },
-  { value:'ZAROZA', label:'فواتير تعويض زاروزا', icon:'🔄' },
-];
 // عنوان الفلتر يتغيّر حسب القسم الحالي (فواتير الدواء / فواتير الكوزمتك بدل "المبيعات العادية")
 function historyFilterLabel(v){
+  if(v==='ALL') return 'كل الفواتير';
   if(v==='NORMAL') return selectedDepartment==='MEDICINE' ? 'فواتير الدواء' : 'فواتير الكوزمتك';
-  const x = HISTORY_FILTERS.find(f=>f.value===v);
-  return x ? x.label : '';
+  if(v==='ASIL') return 'فواتير تعويض الأصيل';
+  if(v==='ZAROZA') return 'فواتير تعويض زاروزا';
+  return '';
 }
-// شاشة الاختيار تظهر فقط بالكوزمتك (3 خيارات) — الأدوية عندها خيار واحد فبيتحدد تلقائيًا
-function historyFiltersForCurrentDept(){
-  if(selectedDepartment==='MEDICINE'){
-    return [{ value:'NORMAL', label:'فواتير الدواء', icon:'🧾' }];
-  }
+// Pills نوع الفاتورة تظهر فقط بالكوزمتك (3 أنواع + الكل) — الأدوية عندها نوع واحد فما في داعي لإظهارها أصلًا
+function historyTypePills(){
+  if(selectedDepartment==='MEDICINE') return [];
   return [
-    { value:'NORMAL', label:'فواتير الكوزمتك', icon:'🧾' },
-    { value:'ASIL',   label:'فواتير تعويض الأصيل', icon:'🔄' },
-    { value:'ZAROZA', label:'فواتير تعويض زاروزا', icon:'🔄' },
+    { value:'ALL',    label:'الكل' },
+    { value:'NORMAL', label:'عادية' },
+    { value:'ASIL',   label:'تعويض الأصيل' },
+    { value:'ZAROZA', label:'تعويض زاروزا' },
   ];
+}
+const HISTORY_STATUS_PILLS = [
+  { value:'ALL',      label:'الكل' },
+  { value:'APPROVED', label:'مقبولة' },
+  { value:'PENDING',  label:'قيد المراجعة' },
+  { value:'REJECTED', label:'مرفوضة' },
+];
+// عناوين فواصل التاريخ ("اليوم" / "أمس" / "أيلول ٢٠٢٦"...) بناءً على تاريخ رفع الفاتورة
+function historyDateGroupLabel(dateVal){
+  const d = new Date(dateVal);
+  const now = new Date();
+  const startOf = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const diffDays = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if(diffDays===0) return 'اليوم';
+  if(diffDays===1) return 'أمس';
+  if(d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth()) return fmtMonth(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  return fmtMonth(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
 }
 
 // الأدمن
@@ -738,7 +789,7 @@ function switchDepartment(){
   selectedDepartment = null;
   saleMode = null;
   CATEGORIES = []; mySalesCache = null;
-  historyFilterType = null; showFreeItemsSummary = false;
+  historyFilterType = 'ALL'; historyStatusFilter = 'ALL'; showFreeItemsSummary = false;
   compensationItemsCache = { ASIL:null, ZAROZA:null };
   render();
 }
@@ -1210,7 +1261,7 @@ function doLogout(){
 
 function clearAllCaches(){
   CATEGORIES = []; mySalesCache = null; adminSalesCache = null; pharmacistsCache = null;
-  historyFilterType = null; showFreeItemsSummary = false; referralSummaryCache = null;
+  historyFilterType = 'ALL'; historyStatusFilter = 'ALL'; showFreeItemsSummary = false; referralSummaryCache = null;
   adminFilterActive = false; statsFilterActive = false;
   payoutsData = null; payoutsScope = 'live'; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
   adminPharmacistFilter = null; previousDuesCache = null;
@@ -1326,8 +1377,8 @@ async function switchTab(tab){
   if(tab==='payouts'){ confirmingPayoutId = null; }
   if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
   if(tab==='history'){
-    historyFilterType = selectedDepartment==='MEDICINE' ? 'NORMAL' : null;
-    showFreeItemsSummary = false;
+    // بقسم الأدوية النوع دايمًا "عادية" (نوع وحيد) — بالكوزمتك بيتذكر آخر فلتر اخترته المستخدم (Pills)
+    if(selectedDepartment==='MEDICINE') historyFilterType = 'NORMAL';
   }
   render();
   await loadTabData(tab);
@@ -1683,36 +1734,59 @@ function tabHistory(){
   if(mySalesCache===null){
     return `<div class="section-title">سجل المبيعات</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
+  if(selectedDepartment==='MEDICINE') historyFilterType = 'NORMAL';
 
-  if(!historyFilterType){
-    return `
-    <div class="section-title">سجل المبيعات</div>
-    <p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;">اختر نوع الفواتير اللي بدك تعرضها</p>
-    ${historyFiltersForCurrentDept().map(f=>`
-      <button class="btn ${f.value==='NORMAL'?'':'accent'}" style="margin-bottom:12px;font-size:15.5px;padding:16px;" onclick="pickHistoryFilter('${f.value}')">
-        ${f.icon} ${f.label}
-      </button>`).join('')}
-    `;
-  }
+  // فلترة حسب نوع الفاتورة (Pill الأول) — NORMAL دايمًا مقيّد بالقسم الحالي حتى جوا "الكل"
+  const byDept = mySalesCache.filter(s => (s.saleType||'NORMAL')!=='NORMAL' || s.department===selectedDepartment);
+  const mySales = historyFilterType==='ALL' ? byDept : byDept.filter(s => (s.saleType||'NORMAL')===historyFilterType);
 
-  const mySales = mySalesCache.filter(s =>
-    (s.saleType || 'NORMAL') === historyFilterType &&
-    (historyFilterType!=='NORMAL' || s.department===selectedDepartment)
-  );
-  const isComp = historyFilterType==='ASIL' || historyFilterType==='ZAROZA';
-  const approvedCount = mySales.filter(s=>s.status==='APPROVED').length;
-  const pendingCount = mySales.filter(s=>s.status==='PENDING').length;
-  const approvedTotal = mySales.filter(s=>s.status==='APPROVED').reduce((sum,s)=>sum+Number(s.commissionAmount),0);
-  const pendingTotal = mySales.filter(s=>s.status==='PENDING').reduce((sum,s)=>sum+Number(s.commissionAmount),0);
-  const backRow = historyFiltersForCurrentDept().length > 1
-    ? `<div class="back-row" style="margin-bottom:6px;"><button onclick="pickHistoryFilter(null)">‹ تغيير نوع الفواتير</button></div>`
-    : '';
-  const freeItemsBtn = isComp ? `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة'}</button>` : '';
+  const isCompOnly = historyFilterType==='ASIL' || historyFilterType==='ZAROZA';
+
+  const approvedList = mySales.filter(s=>s.status==='APPROVED');
+  const pendingList  = mySales.filter(s=>s.status==='PENDING');
+  const rejectedList = mySales.filter(s=>s.status==='REJECTED');
+  const approvedTotal = approvedList.reduce((sum,s)=>sum+Number(s.commissionAmount),0);
+
+  // فلترة حسب الحالة (Pill الثاني) — تُطبَّق فوق فلتر النوع، بعد حساب الملخص أعلاه
+  const shown = historyStatusFilter==='ALL' ? mySales : mySales.filter(s=>s.status===historyStatusFilter);
+
+  const typePills = historyTypePills();
+  const pillsTypeHtml = typePills.length ? `
+  <div class="filter-pills">
+    ${typePills.map(f=>`<button class="pill ${historyFilterType===f.value?'active':''}" onclick="pickHistoryType('${f.value}')">${esc(f.label)}</button>`).join('')}
+  </div>` : '';
+
+  const pillsStatusHtml = `
+  <div class="filter-pills" style="margin-bottom:14px;">
+    ${HISTORY_STATUS_PILLS.map(f=>`<button class="pill sub ${f.value} ${historyStatusFilter===f.value?'active':''}" onclick="pickHistoryStatus('${f.value}')">${esc(f.label)}</button>`).join('')}
+  </div>`;
+
+  const freeItemsBtn = isCompOnly ? `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة'}</button>` : '';
+
+  const summaryHtml = `
+  <div class="hs-grid">
+    <div class="hs-box ok">
+      <div class="lbl">مقبولة</div>
+      <div class="val num">${isCompOnly ? (approvedList.length + ' فاتورة') : (fmtMoney(approvedTotal) + ' د.أ')}</div>
+    </div>
+    <div class="hs-box pending">
+      <div class="lbl">قيد المراجعة</div>
+      <div class="val num">${pendingList.length}</div>
+    </div>
+    <div class="hs-box rejected">
+      <div class="lbl">مرفوضة</div>
+      <div class="val num">${rejectedList.length}</div>
+    </div>
+  </div>`;
+
+  const header = `
+  <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
+  ${pillsTypeHtml}
+  ${pillsStatusHtml}`;
 
   if(mySales.length===0){
     return `
-    ${backRow}
-    <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
+    ${header}
     <div class="empty-state">
       <div class="ic">🧾</div>
       <div class="t">لا يوجد سجل بعد</div>
@@ -1720,32 +1794,38 @@ function tabHistory(){
     </div>`;
   }
 
-  return `
-  ${backRow}
-  <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
-  ${freeItemsBtn}
-  ${isComp && showFreeItemsSummary ? freeItemsSummaryHtml(mySales) : ''}
-  ${isComp ? `
-  <div class="history-summary">
-    <div>
-      <div class="lbl">فواتير التعويض المؤكدة</div>
-      <div class="val num">${approvedCount} فاتورة</div>
-    </div>
-    <div class="cnt">عدد العمليات<b class="num">${mySales.length}</b></div>
-  </div>
-  ${pendingCount>0 ? `<div style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;">+ ${pendingCount} فاتورة بانتظار المراجعة</div>` : ''}
-  ` : `
-  <div class="history-summary">
-    <div>
-      <div class="lbl">إجمالي العمولات المؤكدة</div>
-      <div class="val num">${fmtMoney(approvedTotal)} د.أ</div>
-    </div>
-    <div class="cnt">عدد العمليات<b class="num">${mySales.length}</b></div>
-  </div>
-  ${pendingTotal>0 ? `<div style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;">+ ${fmtMoney(pendingTotal)} د.أ بانتظار المراجعة</div>` : ''}
-  `}
-  ${mySales.map(s=>{
+  if(shown.length===0){
     return `
+    ${header}
+    ${summaryHtml}
+    <div class="empty-state">
+      <div class="ic">🔎</div>
+      <div class="t">ما في فواتير مطابقة لهاي الفلترة</div>
+      <div class="d">جرّب تغيير فلتر الحالة بالأعلى</div>
+    </div>`;
+  }
+
+  return `
+  ${header}
+  ${freeItemsBtn}
+  ${isCompOnly && showFreeItemsSummary ? freeItemsSummaryHtml(mySales) : ''}
+  ${summaryHtml}
+  ${renderHistoryTickets(shown)}
+  `;
+}
+
+// يرسم بطاقات الفواتير مع عناوين فاصلة بين الأيام/الأشهر (اليوم / أمس / أيلول ٢٠٢٦...)
+function renderHistoryTickets(list){
+  let lastGroup = null;
+  let out = '';
+  for(const s of list){
+    const group = historyDateGroupLabel(s.createdAt || s.saleDate);
+    if(group !== lastGroup){
+      out += `<div class="date-sep">${esc(group)}</div>`;
+      lastGroup = group;
+    }
+    const isComp = (s.saleType||'NORMAL')==='ASIL' || (s.saleType||'NORMAL')==='ZAROZA';
+    out += `
     <div class="ticket">
       <div class="sale-row">
         ${s.invoiceImageUrl ? `<img class="thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
@@ -1759,13 +1839,13 @@ function tabHistory(){
           <div class="meta">${s.quantity} قطعة · ${fmtDate(s.saleDate)}${s.invoiceNumber ? ' · فاتورة ' + esc(s.invoiceNumber) : ''}</div>
           `}
           <div style="margin-top:5px;">${statusBadgeHtml(s)}</div>
-          ${s.status==='REJECTED' ? `<div class="meta" style="color:var(--danger);margin-top:4px;">تم رفض الطلب — السبب: ${esc(s.rejectionReason||'غير محدد')}</div>` : ''}
+          ${s.status==='REJECTED' ? `<div class="reject-box"><span class="ic">⚠️</span><div><b>تم رفض الطلب</b><br>السبب: ${esc(s.rejectionReason||'غير محدد')}</div></div>` : ''}
         </div>
         ${isComp ? '' : `<div class="commission">${fmtMoney(s.commissionAmount)} د.أ</div>`}
       </div>
     </div>`;
-  }).join('')}
-  `;
+  }
+  return out;
 }
 
 function freeItemsSummaryHtml(mySales){
@@ -1796,9 +1876,13 @@ function freeItemsSummaryHtml(mySales){
   </div>`;
 }
 
-function pickHistoryFilter(type){
+function pickHistoryType(type){
   historyFilterType = type;
   showFreeItemsSummary = false;
+  render();
+}
+function pickHistoryStatus(status){
+  historyStatusFilter = status;
   render();
 }
 
