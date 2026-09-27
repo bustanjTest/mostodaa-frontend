@@ -1371,6 +1371,7 @@ function screenAppShell(){
       ${!isAdmin ? `<button class="${activeTab==='earnings'?'active':''}" onclick="switchTab('earnings')"><span class="ic">💰</span>مستحقاتي</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>التحويلات السابقة</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsAsil'?'active':''}" onclick="switchTab('compReportsAsil')"><span class="ic">🔄</span>تعويض الأصيل</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
@@ -1378,7 +1379,6 @@ function screenAppShell(){
       ${isAdmin ? `<button class="${activeTab==='stats'?'active':''}" onclick="switchTab('stats')"><span class="ic">📈</span>العملاء المسجلون</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payoutsHistory'?'active':''}" onclick="switchTab('payoutsHistory')"><span class="ic">📜</span>الدفعات الشهرية السابقة</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='account'?'active':''}" onclick="switchTab('account')"><span class="ic">🔑</span>حسابي</button>` : ''}
     </div>
   </div>`;
@@ -2375,8 +2375,6 @@ function tabAdmin(){
   if(adminSalesCache===null){
     return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
-  const allSalesSorted = [...adminSalesCache].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
-
   const filterBanner = adminPharmacistFilter ? `
   <div class="otp-banner" style="margin-bottom:14px;">
     <span>تعرض فواتير صيدلي محدد (من صفحة الدفعات) — بالقسمين</span>
@@ -2386,33 +2384,6 @@ function tabAdmin(){
   return `
   ${filterBanner}
   ${renderReviewQueue()}
-
-  <div class="admin-section">
-    <div class="admin-section-head">
-      <div class="section-title" style="margin:0;">كل عمليات البيع</div>
-      <button class="export-btn" onclick="exportSalesToExcel()">⬇ تصدير Excel</button>
-    </div>
-    ${allSalesSorted.length===0 ? `<div class="empty-state"><div class="ic">🧾</div><div class="t">لا توجد عمليات بيع بعد</div></div>` : `
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead><tr>
-          <th>الصيدلية</th><th>الصنف</th><th class="num">القطع</th><th>التاريخ</th><th class="num">العمولة (د.أ)</th><th>الحالة</th><th>الفاتورة</th>
-        </tr></thead>
-        <tbody>
-        ${allSalesSorted.map(s=>{
-          const p = s.pharmacist;
-          const isComp = s.saleType && s.saleType!=='NORMAL';
-          return `<tr>
-            <td>${esc(p ? p.pharmacyName : '')}</td><td>${saleItemLabel(s)}</td>
-            <td class="num">${isComp ? '—' : s.quantity}</td><td>${fmtDate(s.saleDate)}</td><td class="num">${isComp ? '—' : fmtMoney(s.commissionAmount)}</td>
-            <td>${statusBadgeHtml(s)}</td>
-            <td>${s.invoiceImageUrl ? `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>` : '—'}</td>
-          </tr>`;
-        }).join('')}
-        </tbody>
-      </table>
-    </div>`}
-  </div>
   `;
 }
 
@@ -3169,6 +3140,10 @@ function renderRegionFilterResults(){
       <div class="stat-card"><div class="v num">${fmtMoney(total)}</div><div class="l">إجمالي العمولات (د.أ)</div></div>
     </div>
     ${approvedResults.length===0 ? `<div class="empty-state"><div class="ic">🔎</div><div class="t">لا توجد عمولات مؤكدة</div><div class="d">في ${esc(label)} بين ${fmtDate(adminFilter.fromDate)} و${fmtDate(adminFilter.toDate)}</div></div>` : `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
+      <button class="export-btn" onclick="exportReportsToExcel()">⬇ تصدير Excel</button>
+      <button class="export-btn" onclick="printReportsPDF()">🖨️ تصدير PDF</button>
+    </div>
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>#</th><th>الصيدلية</th><th>المنطقة</th><th>الصنف</th><th class="num">القطع</th><th class="num">العمولة (د.أ)</th><th>التاريخ</th><th>الحالة</th><th>الفاتورة</th></tr></thead>
@@ -3386,33 +3361,84 @@ ${pagesHtml}
   w.document.close();
 }
 
-/* -------------------- تصدير Excel لكل عمليات البيع -------------------- */
-function exportSalesToExcel(){
-  const sales = adminSalesCache || [];
-  if(sales.length===0){ toast('لا توجد عمليات بيع لتصديرها', 'danger'); return; }
-  const statusLabel = s => s.status==='APPROVED' ? 'مقبولة' : s.status==='REJECTED' ? 'مرفوضة' : 'قيد المراجعة';
-  const rows = [...sales].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)).map(s=>{
+/* -------------------- تصدير Excel/PDF لتقرير عمولات البيع (حسب الفلتر الحالي فقط) -------------------- */
+function exportReportsToExcel(){
+  const rows = reportsRows || [];
+  if(rows.length===0){ toast('لا توجد نتائج لتصديرها', 'danger'); return; }
+  const data = rows.map((s,i)=>{
     const p = s.pharmacist;
-    const isComp = s.saleType && s.saleType!=='NORMAL';
     return {
+      '#': i+1,
       'اسم الصيدلية': p ? p.pharmacyName : '',
       'صاحب الحساب': p ? p.fullName : '',
       'رقم الهاتف': p ? p.phoneNumber : '',
-      'نوع العملية': saleModeLabel(s.saleType || 'NORMAL'),
+      'المنطقة': s._city || '',
       'الصنف': saleItemLabelPlain(s),
-      'عدد القطع': isComp ? '—' : s.quantity,
+      'عدد القطع': s.quantity,
+      'قيمة العمولة (دينار)': Number(Number(s.commissionAmount).toFixed(3)),
       'تاريخ البيع': toDateInputValue(s.saleDate),
-      'قيمة العمولة (دينار)': isComp ? '—' : Number(Number(s.commissionAmount).toFixed(3)),
-      'الحالة': statusLabel(s),
-      'سبب الرفض': s.rejectionReason || ''
+      'الحالة': 'مقبولة'
     };
   });
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:22},{wch:18},{wch:14},{wch:16},{wch:26},{wch:10},{wch:14},{wch:18},{wch:14},{wch:22}];
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:5},{wch:22},{wch:18},{wch:14},{wch:14},{wch:26},{wch:10},{wch:18},{wch:14},{wch:10}];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'عمليات البيع');
-  XLSX.writeFile(wb, 'مبيعات-مستودع-مسروجي.xlsx');
+  XLSX.utils.book_append_sheet(wb, ws, 'عمولات البيع');
+  const label = adminFilter.pharmacistName || adminFilter.city || 'الكل';
+  XLSX.writeFile(wb, `عمولات-البيع-${label}-${toDateInputValue(new Date())}.xlsx`);
   toast('تم تصدير ملف Excel');
+}
+
+function printReportsPDF(){
+  const rows = reportsRows || [];
+  if(rows.length===0){ toast('لا توجد نتائج لتصديرها', 'danger'); return; }
+  const label = adminFilter.pharmacistName || adminFilter.city || 'كل المناطق';
+  const total = rows.reduce((a,s)=>a+Number(s.commissionAmount),0);
+  const rowsHtml = rows.map((s,i)=>{
+    const p = s.pharmacist;
+    return `<tr><td>${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city||'')}</td><td>${esc(saleItemLabelPlain(s))}</td><td>${s.quantity}</td><td>${fmtMoney(s.commissionAmount)}</td><td>${fmtDate(s.saleDate)}</td></tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تقرير عمولات البيع - ${esc(label)}</title>
+<style>
+  body{ font-family:'Segoe UI', Tahoma, Arial, sans-serif; margin:0; padding:0; color:#1a1a1a; }
+  .pdf-page{ padding:36px 40px; }
+  .pdf-header{ margin-bottom:22px; border-bottom:3px solid #1D6F3E; padding-bottom:14px; }
+  .pdf-title{ font-size:15px; color:#555; margin-bottom:4px; }
+  .pdf-pharmacy{ font-size:24px; font-weight:800; color:#1D6F3E; }
+  .pdf-date{ font-size:12px; color:#888; margin-top:6px; }
+  .pdf-table{ width:100%; border-collapse:collapse; margin-top:14px; }
+  .pdf-table th, .pdf-table td{ border:1px solid #ddd; padding:9px 10px; text-align:right; font-size:13px; }
+  .pdf-table th{ background:#E9F5EF; color:#1D6F3E; font-weight:800; }
+  .pdf-table tfoot td{ font-weight:800; background:#F7F7F7; }
+  @media print{ .pdf-page{ padding:24px 30px; } }
+</style>
+</head>
+<body onload="window.print()">
+  <div class="pdf-page">
+    <div class="pdf-header">
+      <div class="pdf-title">تقرير عمولات البيع</div>
+      <div class="pdf-pharmacy">${esc(label)}</div>
+      <div class="pdf-date">الفترة: ${fmtDate(adminFilter.fromDate)} — ${fmtDate(adminFilter.toDate)} | تاريخ التصدير: ${fmtDate(new Date())}</div>
+    </div>
+    <table class="pdf-table">
+      <thead><tr><th>#</th><th>الصيدلية</th><th>المنطقة</th><th>الصنف</th><th>القطع</th><th>العمولة (د.أ)</th><th>التاريخ</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td colspan="5">الإجمالي</td><td>${fmtMoney(total)}</td><td></td></tr></tfoot>
+    </table>
+  </div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ toast('الرجاء السماح بالنوافذ المنبثقة (Popups) لهذا الموقع', 'danger'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
 
 /* ---------------- init ---------------- */
