@@ -519,6 +519,19 @@ let compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter()
 let compReportsRows = { ASIL: null, ZAROZA: null };
 let compReportsActive = { ASIL:false, ZAROZA:false };
 
+// رسائل جماعية (SMS) — فلتر المناطق يُدمج مع فلتر الصيدليات المحددة يدويًا (OR)
+function defaultMessagesState(){
+  return { cities:[], pharmacistIds:[], allPharmacists:false, pharmacistSearch:'' };
+}
+let messagesState = defaultMessagesState();
+let messagesCampaignsCache = null;   // GET /messages/campaigns
+let messagesCampaignDetailCache = {}; // id -> تفاصيل الحملة (تُحمّل عند الطلب فقط)
+let messagesExpandedCampaignId = null;
+let messagesPendingSend = null;      // لقطة من المحتوى + مرحلة الاعتماد: stage='review' ثم 'code'
+let messagesDraft = { name:'', text:'' }; // مسودة الرسالة (بتنحفظ مع كل ضغطة حرف عشان render() ما يمسحها)
+let messagesSending = false;
+let messagesLastResult = null;       // نتيجة آخر حملة أُرسلت (للعرض فوق السجل مباشرة)
+
 // الأدمن داخل لوحة الكوزمتك — تظهر له تبويبات تعويض الأصيل/زاروزا
 function isCosmeticsAdminContext(){
   if(!currentUser || currentUser.type!=='admin') return false;
@@ -1286,6 +1299,9 @@ function clearAllCaches(){
   compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
   compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
   compReportsRows = { ASIL: null, ZAROZA: null }; compReportsActive = { ASIL:false, ZAROZA:false };
+  messagesState = defaultMessagesState(); messagesCampaignsCache = null; messagesCampaignDetailCache = {};
+  messagesExpandedCampaignId = null; messagesPendingSend = null; messagesSending = false; messagesLastResult = null;
+  messagesDraft = { name:'', text:'' };
 }
 
 function currentDepartmentParam(){
@@ -1317,7 +1333,7 @@ function adminRoleLabel(_u){
 function screenAppShell(){
   const isAdmin = currentUser.type === 'admin';
   const isSuperAdmin = isAdmin && currentUser.role === 'SUPER_ADMIN';
-  const wideTabs = ['admin','reports','users','stats','payouts','payoutsHistory','account','compReportsAsil','compReportsZaroza'];
+  const wideTabs = ['admin','messages','reports','users','stats','payouts','payoutsHistory','account','compReportsAsil','compReportsZaroza'];
   const isWide = wideTabs.includes(activeTab);
   const nameLine = esc(isAdmin ? currentUser.fullName : currentUser.pharmacyName);
   const subLine = isAdmin ? (adminRoleLabel(currentUser) + ' · لوحة التحكم') : (esc(currentUser.fullName) + ' · ' + esc(currentUser.city));
@@ -1361,6 +1377,7 @@ function screenAppShell(){
     ${activeTab==='payouts' ? tabPayouts() : ''}
     ${activeTab==='payoutsHistory' ? tabPayoutsHistory() : ''}
     ${activeTab==='admin' ? tabAdmin() : ''}
+    ${activeTab==='messages' ? tabMessages() : ''}
     ${activeTab==='account' ? tabAccount() : ''}
   </div>
   <div class="tabbar-fixed-wrap ${isWide?'wide':''}">
@@ -1372,6 +1389,7 @@ function screenAppShell(){
       ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>التحويلات السابقة</button>` : ''}
       ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='messages'?'active':''}" onclick="switchTab('messages')"><span class="ic">📨</span>رسائل جماعية</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsAsil'?'active':''}" onclick="switchTab('compReportsAsil')"><span class="ic">🔄</span>تعويض الأصيل</button>` : ''}
       ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
@@ -1416,6 +1434,10 @@ async function loadTabData(tab){
     if(tab==='previousDues'){ await loadPreviousDues(); render(); }
     if(tab==='referral'){ await loadReferralSummary(); render(); }
     if(tab==='admin'){ await loadAdminSales(); render(); }
+    if(tab==='messages'){
+      if(!pharmacistsCache){ await loadPharmacists(); render(); }
+      if(!messagesCampaignsCache){ await loadMessageCampaigns(); render(); }
+    }
     if(tab==='users'){ await loadCategories(); render(); }
     if(tab==='stats'){ await loadPharmacists(); render(); }
     if(tab==='payouts'){ await loadPayouts(); render(); }
@@ -2387,6 +2409,401 @@ function tabAdmin(){
   `;
 }
 
+/* -------------------- تبويب: رسائل جماعية (SMS) -------------------- */
+
+// تقدير عدد رسائل الـ SMS: النص العربي بيُرسل بترميز UCS-2 (٧٠ حرف بالرسالة الواحدة،
+// ٦٧ حرف لكل جزء لو انقسم لعدة رسائل) — تقدير تقريبي لعرضه للأدمن فقط، مش حساب دقيق 100%.
+function estimateSmsSegments(text){
+  const len = Array.from(text || '').length;
+  const isGsm7 = /^[\x00-\x7F]*$/.test(text || '');
+  const singleLimit = isGsm7 ? 160 : 70;
+  const multiLimit = isGsm7 ? 153 : 67;
+  if(len === 0) return { len:0, segments:0 };
+  const segments = len <= singleLimit ? 1 : Math.ceil(len / multiLimit);
+  return { len, segments };
+}
+function messageCharCountLabel(text){
+  const { len, segments } = estimateSmsSegments(text);
+  if(len === 0) return 'بانتظار كتابة الرسالة...';
+  return `${len} حرف — تقريبًا ${segments} رسالة SMS`;
+}
+function onMessageTextInput(value){
+  messagesDraft.text = value;
+  const el = document.getElementById('msgCharCount');
+  if(el) el.textContent = messageCharCountLabel(value);
+}
+
+function activePharmacistsSorted(){
+  return (pharmacistsCache||[]).filter(p=>p.isActive)
+    .slice().sort((a,b)=>(a.pharmacyName||'').localeCompare(b.pharmacyName||'', 'ar'));
+}
+// لائحة الصيادلة المطابقين للفلتر الحالي (منطقة أو صيدلية محددة، والاثنين يندمجوا مع بعض)
+function computeMessageMatchedList(){
+  const activeList = activePharmacistsSorted();
+  if(messagesState.allPharmacists) return activeList;
+  if(messagesState.cities.length===0 && messagesState.pharmacistIds.length===0) return [];
+  return activeList.filter(p => messagesState.cities.includes(p.city) || messagesState.pharmacistIds.includes(p.id));
+}
+
+function toggleMessageCity(city){
+  const i = messagesState.cities.indexOf(city);
+  if(i>=0) messagesState.cities.splice(i,1); else messagesState.cities.push(city);
+  render();
+}
+function toggleMessageAllPharmacists(){
+  messagesState.allPharmacists = !messagesState.allPharmacists;
+  render();
+}
+function toggleMessagePharmacist(id){
+  const i = messagesState.pharmacistIds.indexOf(id);
+  if(i>=0) messagesState.pharmacistIds.splice(i,1); else messagesState.pharmacistIds.push(id);
+  render();
+}
+function clearMessagePharmacists(){
+  messagesState.pharmacistIds = [];
+  render();
+}
+// بحث داخل قائمة الصيدليات المحددة يدويًا — بيحدّث القائمة مباشرة بدون render() كامل
+// حتى ما ينفلت فوكس صندوق الكتابة (نفس فكرة فلترة صندوق البحث بتقارير العمولات)
+function onMessagePharmacistSearch(value){
+  messagesState.pharmacistSearch = value;
+  const listEl = document.getElementById('msgPharmacistList');
+  if(listEl) listEl.innerHTML = renderMessagePharmacistOptions();
+}
+function renderMessagePharmacistOptions(){
+  const activeList = activePharmacistsSorted();
+  const q = (messagesState.pharmacistSearch||'').trim();
+  const filtered = q ? activeList.filter(p=> (p.pharmacyName||'').includes(q) || (p.fullName||'').includes(q)) : activeList;
+  if(filtered.length===0) return `<div class="combo-empty">لا يوجد نتائج</div>`;
+  return filtered.map(p=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13.5px;">
+      <input type="checkbox" style="width:auto;margin:0;" ${messagesState.pharmacistIds.includes(p.id)?'checked':''} onchange="toggleMessagePharmacist('${p.id}')">
+      <span style="flex:1;">${esc(p.pharmacyName)}</span><span style="color:var(--ink-soft);font-size:11.5px;">${esc(p.city||'')}</span>
+    </label>`).join('');
+}
+
+// المرحلة 1: يتحقق من المحتوى ويعرض ملخص المراجعة (لسا ما انبعت أي رمز ولا رسالة)
+function startMessageSend(){
+  const textEl = document.getElementById('msgCampaignText');
+  const nameEl = document.getElementById('msgCampaignName');
+  if(textEl) messagesDraft.text = textEl.value;
+  if(nameEl) messagesDraft.name = nameEl.value;
+  const text = messagesDraft.text.trim();
+  const name = messagesDraft.name.trim();
+  if(text.length < 3){ toast('اكتب نص رسالة أطول قليلاً (٣ أحرف على الأقل)', 'danger'); return; }
+  const matched = computeMessageMatchedList();
+  if(matched.length===0){ toast('لا يوجد صيادلة مطابقين لهذا الفلتر حاليًا', 'danger'); return; }
+  messagesPendingSend = {
+    stage: 'review',
+    name, text,
+    cities: [...messagesState.cities],
+    pharmacistIds: [...messagesState.pharmacistIds],
+    allPharmacists: messagesState.allPharmacists,
+    count: matched.length,
+    challengeToken: null, maskedPhone: '', expiresAtMs: 0,
+  };
+  render();
+}
+// إلغاء = رجوع للتعديل (المسودة والفلاتر بتضل زي ما هي)
+function cancelMessageSend(){ messagesPendingSend = null; render(); }
+
+// المرحلة 2: طلب رمز الاعتماد (بيروح لهاتف الإدارة، صالح ١٠ دقائق). كمان بيُستخدم لإعادة إرسال الرمز.
+async function requestMessageApproval(){
+  const p = messagesPendingSend;
+  if(!p || messagesSending) return;
+  messagesSending = true; render();
+  try{
+    const res = await apiRequest('/messages/campaigns/request-approval', { method:'POST', json:{
+      text: p.text, cities: p.cities, pharmacistIds: p.pharmacistIds, allPharmacists: p.allPharmacists,
+    }});
+    p.stage = 'code';
+    p.challengeToken = res.data.challengeToken;
+    p.maskedPhone = res.data.maskedPhone;
+    p.count = res.data.recipientCount;
+    p.expiresAtMs = Date.now() + res.data.expiresInMinutes * 60 * 1000;
+    toast('انبعت رمز الاعتماد لهاتف الإدارة');
+  }catch(e){
+    toast(e.message, 'danger');
+  }finally{
+    messagesSending = false;
+    render();
+  }
+}
+
+// المرحلة 3: إدخال الرمز → الإرسال الفعلي (السيرفر بيرفض أي إرسال بدون رمز صحيح لنفس المحتوى)
+async function confirmMessageSend(){
+  const p = messagesPendingSend;
+  if(!p || p.stage!=='code' || messagesSending) return;
+  const codeEl = document.getElementById('msgApprovalCode');
+  const code = codeEl ? codeEl.value.trim() : '';
+  if(!/^[0-9]{6}$/.test(code)){ toast('أدخل رمز الاعتماد المكوّن من ٦ أرقام', 'danger'); return; }
+  messagesSending = true; render();
+  try{
+    const payload = {
+      text: p.text, cities: p.cities, pharmacistIds: p.pharmacistIds, allPharmacists: p.allPharmacists,
+      challengeToken: p.challengeToken, code,
+    };
+    if(p.name) payload.name = p.name;
+    const res = await apiRequest('/messages/campaigns', { method:'POST', json:payload });
+    messagesLastResult = res.data;
+    messagesCampaignDetailCache[res.data.id] = res.data;
+    toast(`بدأ إرسال الحملة "${res.data.name}" لـ ${res.data.totalRecipients} صيدلية — بتتابع نتيجتها هون تلقائيًا`);
+    messagesPendingSend = null;
+    messagesState = defaultMessagesState();
+    messagesDraft = { name:'', text:'' };
+    messagesCampaignsCache = null;
+    await loadMessageCampaigns();
+  }catch(e){
+    toast(e.message, 'danger'); // رمز غلط/منتهي: بنضل بمرحلة إدخال الرمز عشان يعيد المحاولة أو يطلب رمز جديد
+  }finally{
+    messagesSending = false;
+    render();
+  }
+  if(messagesLastResult) pollMessageCampaign(messagesLastResult.id);
+}
+
+// الإرسال بيصير بالخلفية بالسيرفر → بنتابع تقدّم الحملة كل ٣ ثواني ونحدّث الصندوقين المعنيين مباشرة
+// (بدون render() كامل، عشان ما نقطع الكتابة أو إدخال الرمز لو الأدمن عم يجهّز حملة ثانية)
+const messagePollers = new Set();
+function messageCampaignInProgress(c){
+  const k = (c && c.counts) || {};
+  return (k.PENDING||0) + (k.SENDING||0) > 0;
+}
+function refreshMessageProgressDom(){
+  const box = document.getElementById('msgLastResultBox');
+  if(box) box.innerHTML = renderMessagesLastResultInner();
+  const hist = document.getElementById('msgHistoryWrap');
+  if(hist) hist.innerHTML = renderMessagesCampaignsList();
+}
+async function pollMessageCampaign(id){
+  if(messagePollers.has(id)) return;
+  messagePollers.add(id);
+  try{
+    for(let i=0; i<200; i++){ // سقف ~١٠ دقائق
+      await new Promise(r => setTimeout(r, 3000));
+      if(!currentUser || activeTab!=='messages') break;
+      const res = await apiRequest('/messages/campaigns/'+id);
+      const d = res.data;
+      messagesCampaignDetailCache[id] = d;
+      if(messagesLastResult && messagesLastResult.id===id) messagesLastResult = d;
+      const row = (messagesCampaignsCache||[]).find(x=>x.id===id);
+      if(row) row.counts = d.counts;
+      refreshMessageProgressDom();
+      if(!messageCampaignInProgress(d)) break;
+    }
+  }catch(e){ /* انقطاع مؤقت: بيتحدّث عند فتح التبويب من جديد */ }
+  finally{ messagePollers.delete(id); }
+}
+
+async function loadMessageCampaigns(){
+  const res = await apiRequest('/messages/campaigns');
+  messagesCampaignsCache = res.data;
+}
+
+async function toggleMessageCampaignDetail(id){
+  if(messagesExpandedCampaignId === id){ messagesExpandedCampaignId = null; render(); return; }
+  messagesExpandedCampaignId = id;
+  render();
+  if(!messagesCampaignDetailCache[id]){
+    try{
+      const res = await apiRequest('/messages/campaigns/'+id);
+      messagesCampaignDetailCache[id] = res.data;
+      render();
+    }catch(e){ toast(e.message, 'danger'); }
+  }
+}
+
+// 🟢 تم التسليم لسا معطّلة فعليًا (بانتظار ربط مزود SMS بيدعم تقارير التسليم) — الشكل جاهز بالكامل
+function messageStatusBadge(status){
+  if(status==='DELIVERED') return `<span class="badge ok">🟢 تم التسليم</span>`;
+  if(status==='SENT') return `<span class="badge pending">📤 تم الإرسال</span>`;
+  if(status==='FAILED') return `<span class="badge rejected">✕ فشل</span>`;
+  if(status==='SENDING') return `<span class="badge pending">📨 جارِ الإرسال</span>`;
+  return `<span class="badge pending">⏳ بالانتظار</span>`;
+}
+
+function renderMessagesCampaignsList(){
+  const list = messagesCampaignsCache || [];
+  if(list.length===0) return `<div class="empty-state"><div class="ic">📨</div><div class="t">ما في حملات مُرسلة بعد</div></div>`;
+  return `
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>الحملة</th><th>نص الرسالة</th><th class="num">المستلمون</th><th class="num">⏳ جارٍ</th><th class="num">🟢 تسليم</th><th class="num">📤 إرسال</th><th class="num">✕ فشل</th><th>التاريخ</th><th></th></tr></thead>
+      <tbody>
+      ${list.map(c=>{
+        const counts = c.counts || {};
+        const preview = (c.text||'').length>60 ? esc(c.text.slice(0,60))+'…' : esc(c.text||'');
+        const row = `<tr>
+          <td><b>${esc(c.name)}</b></td>
+          <td style="max-width:240px;white-space:normal;font-size:12.5px;color:var(--ink-soft);">${preview}</td>
+          <td class="num">${c.totalRecipients}</td>
+          <td class="num">${(counts.PENDING||0)+(counts.SENDING||0)}</td>
+          <td class="num">${counts.DELIVERED||0}</td>
+          <td class="num">${counts.SENT||0}</td>
+          <td class="num">${counts.FAILED||0}</td>
+          <td>${fmtDate(c.createdAt)}</td>
+          <td><button class="btn ghost sm" onclick="toggleMessageCampaignDetail('${c.id}')">${messagesExpandedCampaignId===c.id ? 'إخفاء' : 'التفاصيل'}</button></td>
+        </tr>`;
+        if(messagesExpandedCampaignId !== c.id) return row;
+        const detail = messagesCampaignDetailCache[c.id];
+        if(!detail || !detail.recipients){
+          return row + `<tr><td colspan="9" style="color:var(--ink-soft);padding:14px;">جارِ التحميل...</td></tr>`;
+        }
+        return row + `<tr><td colspan="9" style="background:var(--accent-tint);padding:14px;">
+          <div style="font-weight:800;margin-bottom:8px;">نص الرسالة الكامل:</div>
+          <div style="margin-bottom:12px;white-space:pre-wrap;">${esc(c.text)}</div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>الصيدلية</th><th>رقم الهاتف</th><th>الحالة</th><th>ملاحظة</th></tr></thead>
+              <tbody>
+              ${detail.recipients.map(r=>`<tr>
+                <td>${esc(r.pharmacyName)}</td>
+                <td class="num">${esc(r.phoneNumber)}</td>
+                <td>${messageStatusBadge(r.status)}</td>
+                <td style="font-size:11.5px;color:var(--ink-soft);">${esc(r.errorMessage || '—')}</td>
+              </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderMessagesLastResultInner(){
+  const r = messagesLastResult;
+  if(!r || messagesPendingSend) return '';
+  const k = r.counts || {};
+  const inProgress = (k.PENDING||0) + (k.SENDING||0);
+  const done = (r.totalRecipients||0) - inProgress;
+  const pct = r.totalRecipients ? Math.round(done / r.totalRecipients * 100) : 100;
+  return `
+  <div style="background:var(--accent-tint);border-radius:12px;padding:14px;margin-top:14px;">
+    <div style="font-weight:800;margin-bottom:6px;">${inProgress ? '⏳ جارِ الإرسال' : '✅ انتهى الإرسال'} — ${esc(r.name)}</div>
+    <div style="height:8px;background:#fff;border-radius:6px;overflow:hidden;margin:8px 0;">
+      <div style="height:100%;width:${pct}%;background:var(--primary);transition:width .4s;"></div>
+    </div>
+    <div style="font-size:13.5px;">
+      تمت معالجة <b>${done}</b> من <b>${r.totalRecipients}</b> ·
+      📤 تم الإرسال: <b>${k.SENT||0}</b> ·
+      ✕ فشل: <b>${k.FAILED||0}</b>
+    </div>
+  </div>`;
+}
+
+function tabMessages(){
+  if(pharmacistsCache===null || messagesCampaignsCache===null){
+    return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+
+  const matchedCount = computeMessageMatchedList().length;
+
+  const filtersDisabled = messagesState.allPharmacists;
+
+  let confirmBox = '';
+  if(messagesPendingSend){
+    const p = messagesPendingSend;
+    const summary = `
+    <div>رح ترسل الرسالة التالية لـ <b>${p.count}</b> صيدلية:</div>
+    <div style="white-space:pre-wrap;background:#fff;border-radius:8px;padding:10px;margin:8px 0;font-size:13.5px;">${esc(p.text)}</div>`;
+    if(p.stage === 'review'){
+      confirmBox = `
+      <div style="background:var(--accent-tint);border-radius:12px;padding:14px;margin-top:14px;">
+        <div style="font-weight:800;margin-bottom:8px;">مراجعة قبل الإرسال — الخطوة ١ من ٢</div>
+        ${summary}
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">للأمان، الإرسال ما بيتم إلا بعد إدخال رمز اعتماد بينبعت لهاتف الإدارة (صالح ١٠ دقائق).</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn approve sm" ${messagesSending?'disabled':''} onclick="requestMessageApproval()">${messagesSending?'جارِ الإرسال...':'إرسال رمز الاعتماد لهاتف الإدارة'}</button>
+          <button class="btn ghost sm" ${messagesSending?'disabled':''} onclick="cancelMessageSend()">رجوع للتعديل</button>
+        </div>
+      </div>`;
+    } else {
+      const expired = Date.now() > p.expiresAtMs;
+      const untilTxt = new Date(p.expiresAtMs).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+      confirmBox = `
+      <div style="background:var(--accent-tint);border-radius:12px;padding:14px;margin-top:14px;">
+        <div style="font-weight:800;margin-bottom:8px;">أدخل رمز الاعتماد — الخطوة ٢ من ٢</div>
+        ${summary}
+        <div style="font-size:13px;margin-bottom:10px;">
+          ${expired
+            ? `<span style="color:var(--danger,#b3261e);font-weight:700;">انتهت صلاحية الرمز، اطلب رمزًا جديدًا.</span>`
+            : `انبعت رمز من ٦ أرقام لهاتف الإدارة <b dir="ltr">${esc(p.maskedPhone)}</b> — صالح لحد الساعة <b dir="ltr">${untilTxt}</b>.`}
+        </div>
+        <input type="text" id="msgApprovalCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="------" dir="ltr"
+               style="letter-spacing:8px;text-align:center;font-size:22px;max-width:210px;margin-bottom:10px;" ${expired?'disabled':''}>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn approve sm" ${(messagesSending||expired)?'disabled':''} onclick="confirmMessageSend()">${messagesSending?'جارِ الإرسال...':'تأكيد وإرسال الآن'}</button>
+          <button class="btn ghost sm" ${messagesSending?'disabled':''} onclick="requestMessageApproval()">إعادة إرسال الرمز</button>
+          <button class="btn ghost sm" ${messagesSending?'disabled':''} onclick="cancelMessageSend()">رجوع للتعديل</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  return `
+  <div class="section-title">رسائل جماعية (SMS)</div>
+  <div class="otp-banner" style="margin-bottom:14px;">
+    <span>ملاحظة: خدمة الرسائل النصية لسا ما انربطت بمزود حقيقي — كل الرسائل حاليًا رح تنسجل بحالة "فشل الإرسال". حالة "🟢 تم التسليم" جاهزة بالشكل وبتشتغل تلقائيًا فور ربط مزود SMS يدعم تقارير التسليم.</span>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-title">إنشاء حملة جديدة</div>
+
+    <div class="field">
+      <label>المناطق (اختياري، تقدر تحدد أكثر من منطقة — تندمج مع تحديد الصيدليات تحت)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${JORDAN_CITIES.map(c=>`
+        <label style="display:flex;align-items:center;gap:6px;background:${messagesState.cities.includes(c)?'var(--primary-tint)':'#F4F5F7'};padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" style="width:auto;margin:0;" ${messagesState.cities.includes(c)?'checked':''} ${filtersDisabled?'disabled':''} onchange="toggleMessageCity('${c}')"> ${c}
+        </label>`).join('')}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>صيدليات محددة (اختياري، بتنضاف فوق فلتر المناطق)</label>
+      <input type="text" placeholder="ابحث باسم الصيدلية..." value="${esc(messagesState.pharmacistSearch)}" ${filtersDisabled?'disabled':''} oninput="onMessagePharmacistSearch(this.value)">
+      <div id="msgPharmacistList" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-top:8px;${filtersDisabled?'opacity:.5;pointer-events:none;':''}">
+        ${renderMessagePharmacistOptions()}
+      </div>
+      ${messagesState.pharmacistIds.length ? `<button class="link-btn" style="margin-top:6px;" onclick="clearMessagePharmacists()">إلغاء التحديد اليدوي (${messagesState.pharmacistIds.length})</button>` : ''}
+    </div>
+
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" style="width:auto;margin:0;" ${messagesState.allPharmacists?'checked':''} onchange="toggleMessageAllPharmacists()">
+        إرسال لكل الصيادلة (بيتجاوز فلتري المناطق والصيدليات فوق)
+      </label>
+    </div>
+
+    <div class="otp-banner" style="margin-bottom:14px;">
+      <span>عدد المستلمين المطابقين حاليًا: <b>${matchedCount}</b> صيدلية (الصيادلة الموقوفين مستثنون تلقائيًا)</span>
+    </div>
+
+    <div class="field">
+      <label>اسم الحملة (اختياري — لو تركته فاضي بيتسمّى تلقائيًا "حملة رقم N")</label>
+      <input type="text" id="msgCampaignName" placeholder="مثلاً: تذكير موعد التسليم" maxlength="80" value="${esc(messagesDraft.name)}" oninput="messagesDraft.name=this.value">
+    </div>
+
+    <div class="field">
+      <label>نص الرسالة</label>
+      <textarea id="msgCampaignText" rows="4" maxlength="1000" placeholder="اكتب نص الرسالة هنا..." oninput="onMessageTextInput(this.value)">${esc(messagesDraft.text)}</textarea>
+      <div id="msgCharCount" style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">${messageCharCountLabel(messagesDraft.text)}</div>
+    </div>
+
+    ${!messagesPendingSend ? `<button class="btn" onclick="startMessageSend()">إرسال الرسالة</button>` : ''}
+    ${confirmBox}
+    <div id="msgLastResultBox">${renderMessagesLastResultInner()}</div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-title">سجل الحملات السابقة</div>
+    <div id="msgHistoryWrap">${renderMessagesCampaignsList()}</div>
+  </div>
+  `;
+}
+
 /* -------------------- تبويب: إدارة الأصناف -------------------- */
 function tabCategoriesMgmt(){
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
@@ -3066,7 +3483,7 @@ function renderPharmacistComboOptions(ns, query){
     return allOpt + `<div class="combo-empty">لا توجد صيدلية بهاد الاسم</div>`;
   }
   return allOpt + filtered.map(p=>`
-    <div class="combo-opt ${f.pharmacistId===p.id?'active':''}" onclick="pickPharmacistCombo('${ns}','${p.id}','${esc(p.pharmacyName)}')">
+    <div class="combo-opt ${f.pharmacistId===p.id?'active':''}" onclick="pickPharmacistCombo('${ns}','${p.id}')">
       <span>${esc(p.pharmacyName)}</span><span class="combo-sub">${esc(p.city||'')}</span>
     </div>`).join('');
 }
@@ -3085,10 +3502,13 @@ function filterPharmacistCombo(ns){
   listEl.innerHTML = renderPharmacistComboOptions(ns, input.value);
   listEl.classList.remove('hidden');
 }
-function pickPharmacistCombo(ns, id, name){
+function pickPharmacistCombo(ns, id){
   const f = pharmacistFilterState(ns);
-  f.pharmacistId = id;
-  f.pharmacistName = id ? name : '';
+  // الاسم بيُقرأ من الكاش بالـ id (ما بنمرّره داخل onclick أبدًا: الاقتباسات المهرّبة بـ esc() بترجع لأصلها
+  // قبل ما يشتغل الـ JS، وهاد كان يسمح بتنفيذ كود من اسم صيدلية خبيث)
+  const p = id ? (pharmacistsCache||[]).find(x => x.id === id) : null;
+  f.pharmacistId = p ? p.id : '';
+  f.pharmacistName = p ? p.pharmacyName : '';
   render();
 }
 function clearPharmacistCombo(ns){
