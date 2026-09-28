@@ -3161,6 +3161,10 @@ function renderStatsResults(){
       <div class="stat-card"><div class="v num">${list.length}</div><div class="l">عميل مسجّل — ${label}</div></div>
     </div>
     ${list.length===0 ? `<div class="empty-state"><div class="ic">👤</div><div class="t">لا يوجد صيادلة مسجّلون</div><div class="d">في ${label}</div></div>` : `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
+      <button class="export-btn" onclick="exportPharmacistsToExcel()">⬇ تصدير Excel</button>
+      <button class="export-btn" onclick="printPharmacistsPDF()">🖨️ تصدير PDF</button>
+    </div>
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>الاسم</th><th>رقم الهاتف</th><th>الصيدلية</th><th>المدينة</th><th>المنطقة</th><th>الحالة</th></tr></thead>
@@ -3185,6 +3189,79 @@ async function togglePharmacistActive(id, makeActive){
     await loadPharmacists();
     render();
   }catch(e){ toast(e.message, 'danger'); }
+}
+
+/* -------------------- تصدير Excel/PDF للعملاء المسجلين (حسب فلتر المنطقة الحالي فقط) -------------------- */
+function statsFilteredList(){
+  return (pharmacistsCache||[]).filter(u => statsFilter.city==='' || u.city===statsFilter.city);
+}
+function exportPharmacistsToExcel(){
+  const list = statsFilteredList();
+  if(list.length===0){ toast('لا يوجد عملاء لتصديرهم', 'danger'); return; }
+  const data = list.map((u,i)=>({
+    '#': i+1,
+    'الاسم': u.fullName,
+    'رقم الهاتف': u.phoneNumber,
+    'اسم الصيدلية': u.pharmacyName,
+    'المدينة': u.city || '',
+    'المنطقة': u.region || '',
+    'الحالة': u.isActive ? 'مفعّل' : 'موقوف',
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:5},{wch:20},{wch:14},{wch:22},{wch:14},{wch:16},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'العملاء المسجلون');
+  const label = statsFilter.city || 'كل-المناطق';
+  XLSX.writeFile(wb, `العملاء-المسجلون-${label}-${toDateInputValue(new Date())}.xlsx`);
+  toast('تم تصدير ملف Excel');
+}
+function printPharmacistsPDF(){
+  const list = statsFilteredList();
+  if(list.length===0){ toast('لا يوجد عملاء لتصديرهم', 'danger'); return; }
+  const label = statsFilter.city || 'كل المناطق';
+  const rowsHtml = list.map((u,i)=>`<tr>
+    <td>${i+1}</td><td>${esc(u.fullName)}</td><td>${esc(u.phoneNumber)}</td><td>${esc(u.pharmacyName)}</td>
+    <td>${esc(u.city||'')}</td><td>${esc(u.region||'')}</td><td>${u.isActive?'مفعّل':'موقوف'}</td>
+  </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>العملاء المسجلون - ${esc(label)}</title>
+<style>
+  body{ font-family:'Segoe UI', Tahoma, Arial, sans-serif; margin:0; padding:0; color:#1a1a1a; }
+  .pdf-page{ padding:36px 40px; }
+  .pdf-header{ margin-bottom:22px; border-bottom:3px solid #1D6F3E; padding-bottom:14px; }
+  .pdf-title{ font-size:15px; color:#555; margin-bottom:4px; }
+  .pdf-pharmacy{ font-size:24px; font-weight:800; color:#1D6F3E; }
+  .pdf-date{ font-size:12px; color:#888; margin-top:6px; }
+  .pdf-table{ width:100%; border-collapse:collapse; margin-top:14px; }
+  .pdf-table th, .pdf-table td{ border:1px solid #ddd; padding:9px 10px; text-align:right; font-size:13px; }
+  .pdf-table th{ background:#E9F5EF; color:#1D6F3E; font-weight:800; }
+  @media print{ .pdf-page{ padding:24px 30px; } }
+</style>
+</head>
+<body onload="window.print()">
+  <div class="pdf-page">
+    <div class="pdf-header">
+      <div class="pdf-title">العملاء المسجلون</div>
+      <div class="pdf-pharmacy">${esc(label)}</div>
+      <div class="pdf-date">عدد العملاء: ${list.length} | تاريخ التصدير: ${fmtDate(new Date())}</div>
+    </div>
+    <table class="pdf-table">
+      <thead><tr><th>#</th><th>الاسم</th><th>رقم الهاتف</th><th>الصيدلية</th><th>المدينة</th><th>المنطقة</th><th>الحالة</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ toast('الرجاء السماح بالنوافذ المنبثقة (Popups) لهذا الموقع', 'danger'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
 
 /* -------------------- تبويب: الدفعات الشهرية -------------------- */
