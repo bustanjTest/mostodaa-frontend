@@ -355,6 +355,26 @@
   </div>
 </div>
 
+<div id="compareImgModal" class="img-modal-overlay hidden" onclick="closeCompareImageModal()">
+  <div class="img-modal-inner" style="max-width:900px;" onclick="event.stopPropagation()">
+    <div id="compareImgTitle" style="color:#fff;font-weight:800;margin-bottom:10px;text-align:center;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <div style="flex:1;min-width:260px;max-width:420px;">
+        <div style="color:#fff;font-size:12.5px;margin-bottom:6px;text-align:center;">الفاتورة الحالية</div>
+        <img id="compareImgA" style="width:100%;border-radius:10px;" src="" alt="الفاتورة الحالية">
+      </div>
+      <div style="flex:1;min-width:260px;max-width:420px;">
+        <div style="color:#fff;font-size:12.5px;margin-bottom:6px;text-align:center;">الفاتورة المشابهة</div>
+        <img id="compareImgB" style="width:100%;border-radius:10px;" src="" alt="الفاتورة المشابهة">
+      </div>
+    </div>
+    <div class="img-modal-actions">
+      <button class="img-modal-close" onclick="closeCompareImageModal()">✕ إغلاق</button>
+    </div>
+  </div>
+</div>
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* =========================================================
@@ -543,6 +563,9 @@ let statsFilterActive = false;
 
 // الدفعات الشهرية (أدمن)
 let payoutsData = null;        // رد GET /payouts
+let referralAdminData = null;  // رد GET /referral/admin/summary
+let confirmingReferralId = null; // معرف الصيدلي اللي بنأكد تحويل إحالته حاليًا
+let referralHistoryData = null;  // رد GET /referral/admin/history
 let payoutsScope = 'live';     // 'live' = كل المستحق حاليًا | 'last_month' = الشهر التقويمي اللي فات
 let previousDuesCache = null;  // رد GET /payouts/me (تبويب الصيدلي: التحويلات السابقة)
 let payoutsHistoryData = null; // رد GET /payouts/history (تبويب الأدمن: الدفعات الشهرية السابقة)
@@ -687,6 +710,17 @@ function openImageModal(src, filename){
   dl.href = src;
   dl.download = filename || 'فاتورة.jpg';
   document.getElementById('imgModal').classList.remove('hidden');
+}
+function openCompareImageModal(srcA, srcB, similarity){
+  document.getElementById('compareImgA').src = srcA;
+  document.getElementById('compareImgB').src = srcB;
+  document.getElementById('compareImgTitle').textContent = `نسبة التشابه البصري: ${similarity}%`;
+  document.getElementById('compareImgModal').classList.remove('hidden');
+}
+function closeCompareImageModal(){
+  document.getElementById('compareImgModal').classList.add('hidden');
+  document.getElementById('compareImgA').src = '';
+  document.getElementById('compareImgB').src = '';
 }
 function closeImageModal(){
   document.getElementById('imgModal').classList.add('hidden');
@@ -1294,6 +1328,7 @@ function clearAllCaches(){
   historyFilterType = 'ALL'; historyStatusFilter = 'ALL'; showFreeItemsSummary = false; referralSummaryCache = null;
   adminFilterActive = false; statsFilterActive = false;
   payoutsData = null; payoutsScope = 'live'; confirmingPayoutId = null; accountMsg = null; reportsRows = [];
+  referralAdminData = null; confirmingReferralId = null; referralHistoryData = null;
   adminPharmacistFilter = null; previousDuesCache = null; adminFilter = defaultAdminFilter();
   payoutsHistoryData = null; payoutsHistoryFilter = { city:'', search:'' }; payoutsHistoryFilterActive = false;
   compensationItemsCache = { ASIL:null, ZAROZA:null }; catMgmtSubTab = 'NORMAL';
@@ -1333,7 +1368,7 @@ function adminRoleLabel(_u){
 function screenAppShell(){
   const isAdmin = currentUser.type === 'admin';
   const isSuperAdmin = isAdmin && currentUser.role === 'SUPER_ADMIN';
-  const wideTabs = ['admin','messages','reports','users','stats','payouts','payoutsHistory','account','compReportsAsil','compReportsZaroza'];
+  const wideTabs = ['admin','messages','reports','users','stats','payouts','payoutsHistory','referralAdmin','account','compReportsAsil','compReportsZaroza'];
   const isWide = wideTabs.includes(activeTab);
   const nameLine = esc(isAdmin ? currentUser.fullName : currentUser.pharmacyName);
   const subLine = isAdmin ? (adminRoleLabel(currentUser) + ' · لوحة التحكم') : (esc(currentUser.fullName) + ' · ' + esc(currentUser.city));
@@ -1376,6 +1411,7 @@ function screenAppShell(){
     ${activeTab==='stats' ? tabPharmacists() : ''}
     ${activeTab==='payouts' ? tabPayouts() : ''}
     ${activeTab==='payoutsHistory' ? tabPayoutsHistory() : ''}
+    ${activeTab==='referralAdmin' ? tabReferralAdmin() : ''}
     ${activeTab==='admin' ? tabAdmin() : ''}
     ${activeTab==='messages' ? tabMessages() : ''}
     ${activeTab==='account' ? tabAccount() : ''}
@@ -1397,6 +1433,7 @@ function screenAppShell(){
       ${isAdmin ? `<button class="${activeTab==='stats'?'active':''}" onclick="switchTab('stats')"><span class="ic">📈</span>العملاء المسجلون</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='payoutsHistory'?'active':''}" onclick="switchTab('payoutsHistory')"><span class="ic">📜</span>الدفعات الشهرية السابقة</button>` : ''}
+      ${isAdmin ? `<button class="${activeTab==='referralAdmin'?'active':''}" onclick="switchTab('referralAdmin')"><span class="ic">🤝</span>مستحقات الإحالة</button>` : ''}
       ${isAdmin ? `<button class="${activeTab==='account'?'active':''}" onclick="switchTab('account')"><span class="ic">🔑</span>حسابي</button>` : ''}
     </div>
   </div>`;
@@ -1410,6 +1447,7 @@ async function switchTab(tab){
   if(tab==='add'){ resetAddFlow(); }
   if(tab==='payoutInfo'){ payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = ''; }
   if(tab==='payouts'){ confirmingPayoutId = null; }
+  if(tab==='referralAdmin'){ confirmingReferralId = null; }
   if(tab==='users'){ catMgmtSubTab = 'NORMAL'; }
   if(tab==='history'){
     // بقسم الأدوية النوع دايمًا "عادية" (نوع وحيد) — بالكوزمتك بيتذكر آخر فلتر اخترته المستخدم (Pills)
@@ -1442,6 +1480,7 @@ async function loadTabData(tab){
     if(tab==='stats'){ await loadPharmacists(); render(); }
     if(tab==='payouts'){ await loadPayouts(); render(); }
     if(tab==='payoutsHistory'){ await loadPayoutsHistory(); render(); }
+    if(tab==='referralAdmin'){ await loadReferralAdmin(); await loadReferralHistory(); render(); }
     if(tab==='reports' && !pharmacistsCache){ await loadPharmacists(); render(); }
     if((tab==='compReportsAsil' || tab==='compReportsZaroza') && !pharmacistsCache){ await loadPharmacists(); render(); }
   }catch(e){ toast(e.message, 'danger'); }
@@ -1473,6 +1512,14 @@ async function loadPreviousDues(){
 async function loadPayouts(){
   const res = await apiRequest('/payouts?scope=' + payoutsScope);
   payoutsData = res.data;
+}
+async function loadReferralAdmin(){
+  const res = await apiRequest('/referral/admin/summary');
+  referralAdminData = res.data;
+}
+async function loadReferralHistory(){
+  const res = await apiRequest('/referral/admin/history');
+  referralHistoryData = res.data;
 }
 async function loadPayoutsHistory(){
   const params = new URLSearchParams();
@@ -2336,6 +2383,10 @@ function renderReviewQueue(){
         ${s.isDuplicate ? `<div class="dup-warning">⚠️ يوجد سجل آخر بنفس الصنف/الكمية/التاريخ لنفس الصيدلي — الرجاء التدقيق قبل القبول</div>` : ''}
         ${s.duplicateImageCount > 0 ? `<div class="dup-warning">⚠️ نفس صورة الفاتورة مستخدمة في ${s.duplicateImageCount} عملية أخرى — تأكد إنها مش نفس الفاتورة مكررة</div>` : ''}
         ${s.invoiceNumberSharedWithOthers ? `<div class="dup-warning">⚠️ رقم الفاتورة هذا مستخدم من صيدلي آخر — الرجاء التدقيق</div>` : ''}
+        ${s.similarInvoiceImage ? `<div class="dup-warning">
+          🔎 صورة مشابهة بنسبة ${s.similarInvoiceImage.similarity}% لفاتورة ${s.similarInvoiceImage.sameOwner ? 'أخرى لنفس الصيدلي' : `من "${esc(s.similarInvoiceImage.pharmacyName)}"`} — ممكن تكون نفس الفاتورة اتصوّرت مرتين
+          <button class="btn ghost sm" style="margin-right:6px;padding:3px 10px;" onclick="openCompareImageModal('${s.invoiceImageUrl}','${s.similarInvoiceImage.imageUrl}',${s.similarInvoiceImage.similarity})">🖼️ قارن الصورتين</button>
+        </div>` : ''}
         ${isRejecting ? `
         <div class="field" style="margin-top:10px;margin-bottom:0;">
           <textarea id="rejectReason_${s.id}" rows="2" placeholder="اكتب سبب الرفض هنا... (3 أحرف على الأقل)"></textarea>
@@ -3492,6 +3543,101 @@ async function clearPayoutsHistoryFilter(){
   payoutsHistoryData = null;
   render();
   try{ await loadPayoutsHistory(); render(); }catch(e){ toast(e.message, 'danger'); }
+}
+
+/* -------------------- تبويب: مستحقات الإحالة (تأكيد التحويل + سجل تاريخي) -------------------- */
+function tabReferralAdmin(){
+  const rows = referralAdminData || [];
+  const totalDue = rows.reduce((sum,r)=>sum+r.totalAmount, 0);
+
+  return `
+  <div class="section-title">مستحقات الإحالة</div>
+  <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 16px;line-height:1.7;">مكافآت الإحالة (دينار عن كل صيدلي محال فعّل حسابه) المستحقة حاليًا لكل صيدلي، مجمّعة حسب مين أحال. التأكيد يتحقق من المبلغ الحالي الفعلي وقت الضغط، فلو انضافت مكافأة جديدة أثناء انتظارك بيرفض ويطلب تحديث الصفحة.</p>
+
+  ${rows.length===0 ? `<div class="empty-state"><div class="ic">🤝</div><div class="t">لا يوجد مستحقات إحالة حاليًا</div></div>` : `
+  <div class="stat-grid" style="margin-bottom:16px;">
+    <div class="stat-card"><div class="v">${rows.length}</div><div class="l">صيدلي مستحق</div></div>
+    <div class="stat-card"><div class="v">${fmtMoney(totalDue)}</div><div class="l">إجمالي المستحق (د.أ)</div></div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>الصيدلاني / الصيدلية</th><th class="num">عدد الإحالات المفعّلة</th><th class="num">المبلغ المستحق (د.أ)</th><th>طريقة الاستلام</th><th></th></tr></thead>
+      <tbody>
+      ${rows.map(r=>{
+        const hasPayoutInfo = !!(r.payoutType && r.payoutValue);
+        const row = `<tr>
+          <td><b>${esc(r.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(r.pharmacyName)} · <span class="num">${esc(r.phoneNumber)}</span></div></td>
+          <td class="num">${r.rewardsCount}</td>
+          <td class="num"><b>${fmtMoney(r.totalAmount)}</b></td>
+          <td>${hasPayoutInfo ? `${payoutTypeLabel(r.payoutType)} · <span class="num">${esc(r.payoutValue)}</span>` : `<span style="color:var(--danger);">لم يُدخل بعد</span>`}</td>
+          <td>${hasPayoutInfo ? `<button class="btn sm" onclick="startConfirmReferral('${r.pharmacistId}')">تأكيد التحويل</button>` : '—'}</td>
+        </tr>`;
+        if(confirmingReferralId !== r.pharmacistId) return row;
+        return row + `<tr><td colspan="5" style="background:var(--accent-tint);padding:14px;">
+          <div style="margin-bottom:10px;">رح تؤكد تحويل <b>${fmtMoney(r.totalAmount)} د.أ</b> (${r.rewardsCount} مكافأة) لـ <b>${esc(r.fullName)}</b> عبر ${payoutTypeLabel(r.payoutType)} - <span class="num">${esc(r.payoutValue)}</span>.</div>
+          <div class="field" style="margin-bottom:10px;max-width:280px;"><label>رقم عملية التحويل (اختياري)</label><input type="text" id="referralRefInput" placeholder="مثال: CLIQ-12345"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn approve sm" onclick="confirmReferralTransferUI('${r.pharmacistId}', ${r.totalAmount}, ${r.rewardsCount})">نعم، تم التحويل فعليًا</button>
+            <button class="btn ghost sm" onclick="cancelConfirmReferral()">إلغاء</button>
+          </div>
+        </td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>`}
+
+  <div class="section-title" style="margin-top:26px;">سجل تحويلات الإحالة السابقة</div>
+  ${!referralHistoryData ? `<p style="color:var(--ink-soft);">جارِ التحميل...</p>` : (referralHistoryData.items.length===0 ? `
+  <div class="empty-state"><div class="ic">📜</div><div class="t">لا يوجد سجل بعد</div></div>` : `
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>الصيدلاني / الصيدلية</th><th class="num">المبلغ (د.أ)</th><th class="num">عدد المكافآت</th><th>التاريخ</th><th>رقم العملية</th><th>حوّله</th></tr></thead>
+      <tbody>
+      ${referralHistoryData.items.map(p=>`<tr>
+        <td><b>${esc(p.pharmacist.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(p.pharmacist.pharmacyName)}</div></td>
+        <td class="num"><b>${fmtMoney(p.amount)}</b></td>
+        <td class="num">${p.rewardsCount}</td>
+        <td>${fmtDate(p.paidAt)}</td>
+        <td class="num">${p.reference ? esc(p.reference) : '—'}</td>
+        <td>${esc(p.paidBy.fullName)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:10px;">${referralHistoryData.items.length} من ${referralHistoryData.pagination.total}</div>
+  `)}
+  `;
+}
+
+function startConfirmReferral(id){ confirmingReferralId = id; render(); }
+function cancelConfirmReferral(){ confirmingReferralId = null; render(); }
+
+async function confirmReferralTransferUI(pharmacistId, expectedAmount, expectedRewardsCount){
+  const refEl = document.getElementById('referralRefInput');
+  const reference = refEl ? refEl.value.trim() : '';
+  try{
+    await apiRequest('/referral/admin/transfer', { method:'POST', json:{
+      pharmacistId, expectedAmount, expectedRewardsCount, reference: reference || undefined,
+    }});
+    toast('تم تسجيل تحويل مستحقات الإحالة بنجاح');
+    confirmingReferralId = null;
+    referralAdminData = null; referralHistoryData = null;
+    render();
+    await Promise.all([loadReferralAdmin(), loadReferralHistory()]);
+    render();
+  }catch(e){
+    // AMOUNT_CHANGED: تغيّر المبلغ الفعلي منذ فتح الصفحة (مكافأة جديدة انضافت مثلًا) — نحدّث البيانات
+    // ونخلي الأدمن يشوف الرقم الجديد ويأكد عليه من جديد، بدل ما نمرر رقم قديم غلط
+    if(e.code === 'AMOUNT_CHANGED'){
+      toast(e.message, 'danger');
+      confirmingReferralId = null;
+      referralAdminData = null;
+      render();
+      try{ await loadReferralAdmin(); render(); }catch(_e){}
+    } else {
+      toast(e.message, 'danger');
+    }
+  }
 }
 
 /* -------------------- تبويب: التقارير -------------------- */
