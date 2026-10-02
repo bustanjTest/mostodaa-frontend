@@ -403,7 +403,9 @@ const DEPARTMENTS = [ { value:'MEDICINE', label:'الأدوية', icon:'💊' },
 function deptLabel(dep){ const d = DEPARTMENTS.find(x=>x.value===dep); return d ? d.label : dep; }
 
 /* ---------------- الحالة العامة ---------------- */
-let token = localStorage.getItem('mm_token') || null;
+// الجلسة محفوظة بكوكي httpOnly من السيرفر (مش localStorage) — جافاسكربت ما بيقدر
+// يقرأها أو يعرف وجودها مسبقًا، فما في متغيّر "token" محلي؛ كل طلب بيبعت الكوكي
+// تلقائيًا (credentials:'include')، والسيرفر هو اللي بيقرر لو الجلسة صالحة.
 let currentUser = null; // من /users/me -> { type:'pharmacist'|'admin', ... }
 let CATEGORIES = [];    // أصناف القسم الحالي
 
@@ -514,11 +516,8 @@ let pharmacistsCache = null; // GET /users/pharmacists
 // تبويب "إدارة الأصناف" عند الأدمن: تبويب فرعي حالي (فقط لقسم الكوزمتك)
 // 'NORMAL' = الأصناف العادية / 'ASIL' / 'ZAROZA' = أصناف التعويض
 let catMgmtSubTab = 'NORMAL';
-// نموذج إضافة صنف جديد: هل مفعّل خيار "رفع العمولة" (عمولة متدرّجة)؟
-let newCatTierEnabled = false;
-// تعديل صنف موجود: أي صنف حاليًا بوضع التعديل (id) وهل مفعّل عنده خيار رفع العمولة
+// تعديل صنف موجود: أي صنف حاليًا بوضع التعديل (id)
 let editingCategoryId = null;
-let editCatTierEnabled = {};
 
 // تبويب الإحالة
 let referralSummaryCache = null;
@@ -578,14 +577,15 @@ let accountMsg = null;         // رسالة تبويب الحساب (تغيير
 /* ---------------- API helper ---------------- */
 async function apiRequest(path, { method='GET', json=null, form=null, auth=true } = {}){
   const headers = {};
-  if(auth && token) headers['Authorization'] = 'Bearer ' + token;
   let body;
   if(form){ body = form; }
   else if(json){ headers['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
 
   let res;
   try{
-    res = await fetch(API_BASE + path, { method, headers, body });
+    // credentials:'include' إلزامي حتى يرسل المتصفح كوكي الجلسة (httpOnly) مع الطلب —
+    // بدونها الطلب بيروح بدون أي إثبات هوية حتى لو المستخدم مسجّل دخول فعليًا
+    res = await fetch(API_BASE + path, { method, headers, body, credentials:'include' });
   }catch(e){
     showConnBanner(true);
     throw new Error('تعذر الاتصال بالسيرفر. تأكد من تشغيل الباك-إند وصحة عنوان API_BASE.');
@@ -604,7 +604,7 @@ async function apiRequest(path, { method='GET', json=null, form=null, auth=true 
     err.details = data && data.details;
     err.code = data && data.code;
     err.status = res.status;
-    if(res.status === 401 && auth && token){ handleUnauthorized(); }
+    if(res.status === 401 && auth && currentUser){ handleUnauthorized(); }
     throw err;
   }
   return data; // { success, message, data }
@@ -622,8 +622,9 @@ function showConnBanner(show){
 }
 
 function handleUnauthorized(){
-  token = null; currentUser = null;
-  localStorage.removeItem('mm_token');
+  // الكوكي نفسها خلص عمرها أو انرفضت من السيرفر (401) — ما في شي نمسحه يدويًا من
+  // جافاسكربت (httpOnly)، بس نصفّر حالة الواجهة المحلية
+  currentUser = null;
   currentScreen = 'login';
   toast('انتهت صلاحية الجلسة، الرجاء تسجيل الدخول مجددًا', 'danger');
   render();
@@ -1210,7 +1211,7 @@ async function createAccount(){
       ...(referralCode ? { referralCode } : {})
     }});
     toast('تم إنشاء الحساب بنجاح ✓');
-    await afterAuthSuccess(res.data.token);
+    await afterAuthSuccess();
     resetReg();
   }catch(e){
     toast(e.message, 'danger');
@@ -1245,7 +1246,7 @@ async function verifyAdmin2fa(){
   try{
     const res = await apiRequest('/auth/admin/verify-2fa', { method:'POST', auth:false, json:{ challengeToken: admin2fa.challengeToken, code } });
     admin2fa = { challengeToken:null, maskedPhone:'', devCode:null };
-    await afterAuthSuccess(res.data.token);
+    await afterAuthSuccess();
   }catch(e){
     toast(e.message, 'danger');
     if(btn){ btn.disabled = false; btn.textContent = 'تأكيد ودخول'; }
@@ -1284,16 +1285,16 @@ async function doLogin(){
       goto('twofa');
       return;
     }
-    await afterAuthSuccess(res.data.token);
+    await afterAuthSuccess();
   }catch(e){
     toast(e.message, 'danger');
     if(btn){ btn.disabled = false; btn.textContent = 'دخول'; }
   }
 }
 
-async function afterAuthSuccess(newToken){
-  token = newToken;
-  localStorage.setItem('mm_token', token);
+async function afterAuthSuccess(){
+  // الكوكي (httpOnly) انحطت تلقائيًا من المتصفح لحظة استجابة تسجيل الدخول — ما في
+  // شي نخزّنه يدويًا هون، بس نجيب بيانات المستخدم بالجلسة الجديدة
   await loadMe();
   clearAllCaches();
   resetAddFlow();
@@ -1313,9 +1314,13 @@ async function loadMe(){
   if(currentUser.type === 'admin') currentUser.role = 'SUPER_ADMIN';
 }
 
-function doLogout(){
-  token = null; currentUser = null;
-  localStorage.removeItem('mm_token');
+async function doLogout(){
+  // لازم نطلب من السيرفر يمسح كوكي الجلسة (httpOnly) — جافاسكربت ما بيقدر يمسحها بنفسه.
+  // بنصفّر حالة الواجهة بكل الأحوال حتى لو الطلب فشل (مثلاً انقطع الاتصال)، عشان
+  // المستخدم يحس إنه خرج فورًا من واجهته، والكوكي القديمة أصلًا رح تنتهي صلاحيتها
+  // لحالها لاحقًا حتى لو ما انمسحت فعليًا بسبب فشل الطلب.
+  try{ await apiRequest('/auth/logout', { method:'POST', auth:false }); }catch(e){ /* نكمل تسجيل الخروج محليًا بكل الأحوال */ }
+  currentUser = null;
   selectedDepartment = null; adminDeptFilter = ''; adminPanelChosen = false; saleMode = null;
   resetReg(); resetForgot(); payoutDraft = null; payoutOtpSent = false; payoutOtpDev = null; payoutIntroAcked = false;
   payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = '';
@@ -2888,7 +2893,6 @@ function renderNormalCategoriesMgmt(){
   return `
   ${CATEGORIES.map(c=>{
     if(editingCategoryId === c.id){
-      const tierOn = !!editCatTierEnabled[c.id];
       return `
       <div class="cat-mgmt-row" style="display:block;">
         <div class="field" style="margin-top:0;">
@@ -2899,21 +2903,6 @@ function renderNormalCategoriesMgmt(){
           <label>قيمة العمولة لكل قطعة (دينار)</label>
           <input type="number" id="editCatPrice_${c.id}" min="0" step="0.01" value="${c.commissionPerUnit}">
         </div>
-        <div class="field" style="margin-bottom:6px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;" onclick="toggleEditCatTier('${c.id}')">
-            <input type="checkbox" ${tierOn?'checked':''} onclick="event.stopPropagation();toggleEditCatTier('${c.id}')" style="width:auto;">
-            <span>🔼 رفع العمولة تلقائيًا بعد عدد معيّن من المبيعات</span>
-          </label>
-        </div>
-        ${tierOn ? `
-        <div class="field">
-          <label>بعد عدد القطع (لنفس الصيدلي، تراكمي ويتصفّر كل شهر)</label>
-          <input type="number" id="editCatTierCount_${c.id}" min="1" step="1" placeholder="مثال: 50" value="${c.tierThresholdCount || ''}">
-        </div>
-        <div class="field">
-          <label>تصبح العمولة (دينار لكل قطعة)</label>
-          <input type="number" id="editCatTierPrice_${c.id}" min="0" step="0.01" placeholder="مثال: 0.75" value="${c.tierCommissionPerUnit || ''}">
-        </div>` : ''}
         <div style="display:flex;gap:8px;margin-top:6px;">
           <button class="btn accent sm" onclick="saveEditCategory('${c.id}')">حفظ</button>
           <button class="btn ghost sm" onclick="cancelEditCategory()">إلغاء</button>
@@ -2925,7 +2914,6 @@ function renderNormalCategoriesMgmt(){
       <div>
         <div class="n">${esc(c.name)} ${c.isActive===false ? '<span class="badge rejected" style="margin-right:6px;">غير مفعّل</span>' : ''}</div>
         <div class="p">${fmtMoney(c.commissionPerUnit)} دينار لكل قطعة</div>
-        ${c.tierEnabled ? `<div class="p" style="color:var(--primary-dark);font-weight:700;">🔼 بعد ${c.tierThresholdCount} قطعة بالشهر تصير العمولة ${fmtMoney(c.tierCommissionPerUnit)} دينار</div>` : ''}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn ghost sm" onclick="startEditCategory('${c.id}')">✏️ تعديل</button>
@@ -2944,39 +2932,16 @@ function renderNormalCategoriesMgmt(){
     <label>قيمة العمولة لكل قطعة (دينار)</label>
     <input type="number" id="newCatPrice" min="0" step="0.01" placeholder="مثال: 1">
   </div>
-  <div class="field" style="margin-bottom:6px;">
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;" onclick="toggleNewCatTier()">
-      <input type="checkbox" ${newCatTierEnabled?'checked':''} onclick="event.stopPropagation();toggleNewCatTier()" style="width:auto;">
-      <span>🔼 رفع العمولة تلقائيًا بعد عدد معيّن من المبيعات (اختياري)</span>
-    </label>
-  </div>
-  ${newCatTierEnabled ? `
-  <div class="field">
-    <label>بعد عدد القطع (لنفس الصيدلي، تراكمي ويتصفّر كل شهر)</label>
-    <input type="number" id="newCatTierCount" min="1" step="1" placeholder="مثال: 50">
-  </div>
-  <div class="field">
-    <label>تصبح العمولة (دينار لكل قطعة)</label>
-    <input type="number" id="newCatTierPrice" min="0" step="0.01" placeholder="مثال: 0.75">
-  </div>` : ''}
   <button class="btn accent" onclick="addCategory()">إضافة الصنف</button>
   `;
 }
 
-function toggleNewCatTier(){ newCatTierEnabled = !newCatTierEnabled; render(); }
-
 function startEditCategory(id){
   editingCategoryId = id;
-  const c = CATEGORIES.find(x=>x.id===id);
-  editCatTierEnabled[id] = !!(c && c.tierEnabled);
   render();
 }
 function cancelEditCategory(){
   editingCategoryId = null;
-  render();
-}
-function toggleEditCatTier(id){
-  editCatTierEnabled[id] = !editCatTierEnabled[id];
   render();
 }
 
@@ -2986,22 +2951,9 @@ async function saveEditCategory(id){
   if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
   if(isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
 
-  let payload = { name, commissionPerUnit: price };
-  if(editCatTierEnabled[id]){
-    const tCount = parseInt(document.getElementById('editCatTierCount_'+id).value);
-    const tPrice = parseFloat(document.getElementById('editCatTierPrice_'+id).value);
-    if(isNaN(tCount) || tCount <= 0){ toast('الرجاء إدخال رقم بيعة صحيح لرفع العمولة', 'danger'); return; }
-    if(isNaN(tPrice) || tPrice <= 0){ toast('الرجاء إدخال قيمة عمولة جديدة صحيحة', 'danger'); return; }
-    payload.tierEnabled = true;
-    payload.tierThresholdCount = tCount;
-    payload.tierCommissionPerUnit = tPrice;
-  } else {
-    payload.tierEnabled = false;
-  }
-
   const dep = currentDepartmentParam();
   try{
-    await apiRequest('/categories/' + id, { method:'PATCH', json:{ ...payload, ...(dep?{department:dep}:{}) } });
+    await apiRequest('/categories/' + id, { method:'PATCH', json:{ name, commissionPerUnit: price, ...(dep?{department:dep}:{}) } });
     toast('تم تحديث الصنف بنجاح');
     editingCategoryId = null;
     await loadCategories();
@@ -3015,20 +2967,10 @@ async function addCategory(){
   if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
   if(isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
 
-  let tierPayload = {};
-  if(newCatTierEnabled){
-    const tCount = parseInt(document.getElementById('newCatTierCount').value);
-    const tPrice = parseFloat(document.getElementById('newCatTierPrice').value);
-    if(isNaN(tCount) || tCount <= 0){ toast('الرجاء إدخال رقم بيعة صحيح لرفع العمولة', 'danger'); return; }
-    if(isNaN(tPrice) || tPrice <= 0){ toast('الرجاء إدخال قيمة عمولة جديدة صحيحة', 'danger'); return; }
-    tierPayload = { tierEnabled:true, tierThresholdCount: tCount, tierCommissionPerUnit: tPrice };
-  }
-
   const dep = currentDepartmentParam();
   try{
-    await apiRequest('/categories', { method:'POST', json:{ name, commissionPerUnit: price, ...(dep?{department:dep}:{}), ...tierPayload } });
+    await apiRequest('/categories', { method:'POST', json:{ name, commissionPerUnit: price, ...(dep?{department:dep}:{}) } });
     toast('تمت إضافة الصنف');
-    newCatTierEnabled = false;
     await loadCategories();
     render();
   }catch(e){ toast(e.message, 'danger'); }
@@ -3168,9 +3110,8 @@ async function submitAdminPasswordChange(){
   const btn = document.getElementById('accSaveBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
   try{
-    const res = await apiRequest('/auth/admin/change-password', { method:'POST', json:{ currentPassword: cur, newPassword: n1 } });
-    token = res.data.token;
-    localStorage.setItem('mm_token', token);
+    await apiRequest('/auth/admin/change-password', { method:'POST', json:{ currentPassword: cur, newPassword: n1 } });
+    // السيرفر حط كوكي جلسة جديدة بنفس الرد تلقائيًا (tokenVersion تغيّر فألغى الجلسة القديمة)
     accountMsg = 'تم تغيير كلمة السر بنجاح ✓';
     toast('تم تغيير كلمة السر بنجاح');
     render();
@@ -4093,23 +4034,22 @@ function printReportsPDF(){
   }catch(e){}
 
   document.getElementById('app').innerHTML = `<div class="center-wrap"><div style="color:var(--ink-soft);">جارِ التحميل...</div></div>`;
-  if(token){
-    try{
-      await loadMe();
-      clearAllCaches();
-      if(currentUser.type === 'admin'){
-        adminPanelChosen = false; adminDeptFilter = '';
-        activeTab = 'admin';
-        render();
-      } else {
-        activeTab = 'add';
-        render();
-      }
-      return;
-    }catch(e){
-      token = null; currentUser = null;
-      localStorage.removeItem('mm_token');
+  // ما في طريقة لجافاسكربت يعرف مسبقًا إذا في كوكي جلسة صالحة (httpOnly) — فبنحاول
+  // /users/me دايمًا، والسيرفر هو اللي بيقرر (401 لو ما في جلسة، ونعتبره تسجيل دخول عادي)
+  try{
+    await loadMe();
+    clearAllCaches();
+    if(currentUser.type === 'admin'){
+      adminPanelChosen = false; adminDeptFilter = '';
+      activeTab = 'admin';
+      render();
+    } else {
+      activeTab = 'add';
+      render();
     }
+    return;
+  }catch(e){
+    currentUser = null;
   }
   render();
 })();
