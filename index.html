@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <!-- سياسة أمان المحتوى: تمنع الاتصال بأي سيرفر غير الـ API الخاص بنا (يحدّ من سرقة التوكن لو صار XSS).
+     'unsafe-inline' مطلوبة فعليًا بهاي البنية: الواجهة ملف واحد فيه سكربت inline ومعالجات onclick/onchange داخل القوالب
+     وخصائص style="..." — إزالتها بتكسر التطبيق، وnonce/hash ما بيغطّي معالجات الأحداث inline. (راجعها كـ Security Hotspot → Safe بـ SonarCloud.)
      ملاحظة: لو غيّرت عنوان الـ API (دومين مخصص مثلاً) لازم تعدّل connect-src هون وعنوان API_BASE بالسكربت. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://mostodaa-backend-3d1m.onrender.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
@@ -53,10 +55,10 @@
     width:46px;height:46px;border-radius:13px;flex:none;
     background:linear-gradient(155deg,var(--primary),var(--primary-dark));
     display:flex;align-items:center;justify-content:center;
-    color:var(--accent-tint);font-family:'Cairo';font-weight:800;font-size:20px;
+    color:var(--accent-tint);font-family:'Cairo',sans-serif;font-weight:800;font-size:20px;
     box-shadow:0 6px 16px -6px rgba(10,66,58,.55);
   }
-  .brand-text .t1{font-family:'Cairo';font-weight:800;font-size:18px;line-height:1.1;color:var(--primary-dark);}
+  .brand-text .t1{font-family:'Cairo',sans-serif;font-weight:800;font-size:18px;line-height:1.1;color:var(--primary-dark);}
   .brand-text .t2{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
 
   .field{margin-bottom:16px;}
@@ -64,7 +66,7 @@
   .field .hint{font-size:11.5px;color:var(--ink-soft);margin-top:5px;}
   input[type=text],input[type=tel],input[type=password],input[type=number],input[type=date],select,textarea{
     width:100%;padding:12px 13px;border-radius:11px;border:1.5px solid var(--border);
-    font-family:'Tajawal';font-size:15px;background:#FCFEFD;color:var(--ink);
+    font-family:'Tajawal',sans-serif;font-size:15px;background:#FCFEFD;color:var(--ink);
     outline:none;transition:border-color .15s, box-shadow .15s;
   }
   textarea{resize:vertical;}
@@ -75,7 +77,7 @@
   .row3{display:flex;gap:10px;}
   .row3>*{flex:1;}
 
-  button{font-family:'Tajawal';cursor:pointer;border:none;outline:none;}
+  button{font-family:'Tajawal',sans-serif;cursor:pointer;border:none;outline:none;}
   .btn{
     width:100%;padding:13px 14px;border-radius:12px;font-weight:700;font-size:15px;
     background:var(--primary);color:#fff;transition:transform .12s, background .15s, opacity .15s;
@@ -101,7 +103,7 @@
     background:var(--accent-tint);border:1px dashed #D8B564;border-radius:11px;
     padding:11px 12px;font-size:13.5px;color:#7A5A16;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
   }
-  .otp-banner .code{font-family:'IBM Plex Mono';font-weight:600;font-size:16px;letter-spacing:3px;}
+  .otp-banner .code{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;letter-spacing:3px;}
 
   .badge{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
   .badge.ok{background:#E1F3EA;color:#1D7A4C;}
@@ -135,7 +137,7 @@
     padding:18px 20px 22px;border-radius:0 0 20px 20px;
   }
   .app-header-top{display:flex;justify-content:space-between;align-items:flex-start;}
-  .app-header .pharmacy{font-family:'Cairo';font-weight:800;font-size:17px;}
+  .app-header .pharmacy{font-family:'Cairo',sans-serif;font-weight:800;font-size:17px;}
   .app-header .sub{font-size:12px;opacity:.85;margin-top:2px;}
   .app-header .logout{background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:7px 12px;border-radius:9px;font-weight:700;}
   .app-header .logout:hover{background:rgba(255,255,255,.28);}
@@ -158,7 +160,7 @@
   .tabbar-fixed-wrap{max-width:520px;margin:0 auto;width:100%;position:fixed;bottom:0;left:0;right:0;}
   .tabbar-fixed-wrap.wide{max-width:1000px;}
 
-  .section-title{font-family:'Cairo';font-weight:800;font-size:16.5px;margin:2px 0 14px;color:var(--primary-dark);}
+  .section-title{font-family:'Cairo',sans-serif;font-weight:800;font-size:16.5px;margin:2px 0 14px;color:var(--primary-dark);}
 
   .step-block{margin-bottom:18px;}
   .step-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;}
@@ -188,7 +190,7 @@
     text-align:center;padding:14px 6px 8px;
   }
   .commission-hero .lbl{font-size:13px;color:var(--ink-soft);font-weight:700;}
-  .commission-hero .amt{font-family:'Cairo';font-weight:800;font-size:34px;color:var(--accent);margin:6px 0 2px;}
+  .commission-hero .amt{font-family:'Cairo',sans-serif;font-weight:800;font-size:34px;color:var(--accent);margin:6px 0 2px;}
   .commission-hero .amt .cur{font-size:16px;color:var(--ink-soft);font-weight:700;margin-right:6px;}
 
   .history-summary{
@@ -196,15 +198,15 @@
     border-radius:16px;padding:18px 20px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;
   }
   .history-summary .lbl{font-size:12px;opacity:.85;}
-  .history-summary .val{font-family:'Cairo';font-weight:800;font-size:26px;margin-top:3px;}
+  .history-summary .val{font-family:'Cairo',sans-serif;font-weight:800;font-size:26px;margin-top:3px;}
   .history-summary .cnt{text-align:left;font-size:12px;opacity:.9;}
-  .history-summary .cnt b{font-family:'IBM Plex Mono';font-size:16px;display:block;}
+  .history-summary .cnt b{font-family:'IBM Plex Mono',monospace;font-size:16px;display:block;}
 
   /* ---------- ملخص السجل بـ٣ أرقام (مقبولة/قيد المراجعة/مرفوضة) ---------- */
   .hs-grid{display:flex;gap:8px;margin-bottom:16px;}
   .hs-box{flex:1;border-radius:14px;padding:12px 10px;text-align:center;}
   .hs-box .lbl{font-size:11px;font-weight:700;opacity:.9;}
-  .hs-box .val{font-family:'Cairo';font-weight:800;font-size:16.5px;margin-top:4px;}
+  .hs-box .val{font-family:'Cairo',sans-serif;font-weight:800;font-size:16.5px;margin-top:4px;}
   .hs-box.ok{background:linear-gradient(155deg,var(--primary),var(--primary-dark));color:#fff;}
   .hs-box.pending{background:var(--accent-tint);color:#8A6512;}
   .hs-box.rejected{background:#FBE4E1;color:#A3352A;}
@@ -239,7 +241,7 @@
   .sale-row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
   .sale-row .cat{font-weight:700;font-size:14.5px;}
   .sale-row .meta{font-size:12px;color:var(--ink-soft);margin-top:3px;}
-  .sale-row .commission{font-family:'IBM Plex Mono';font-weight:600;color:var(--accent);font-size:15px;white-space:nowrap;}
+  .sale-row .commission{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--accent);font-size:15px;white-space:nowrap;}
   .thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
 
   .sale-actions{display:flex;gap:8px;margin-top:10px;}
@@ -270,15 +272,15 @@
   .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
   .stat-grid.one{grid-template-columns:1fr;}
   .stat-card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:13px 10px;text-align:center;}
-  .stat-card .v{font-family:'Cairo';font-weight:800;font-size:19px;color:var(--primary-dark);}
+  .stat-card .v{font-family:'Cairo',sans-serif;font-weight:800;font-size:19px;color:var(--primary-dark);}
   .stat-card .l{font-size:11px;color:var(--ink-soft);margin-top:3px;font-weight:600;}
   .admin-section{margin-bottom:30px;}
   .admin-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
   .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:13px;background:#fff;}
   table.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;}
-  table.data-table th{background:var(--primary-tint);color:var(--primary-dark);font-family:'Cairo';font-weight:700;padding:10px 12px;text-align:right;position:sticky;top:0;}
+  table.data-table th{background:var(--primary-tint);color:var(--primary-dark);font-family:'Cairo',sans-serif;font-weight:700;padding:10px 12px;text-align:right;position:sticky;top:0;}
   table.data-table td{padding:9px 12px;border-top:1px solid var(--border);color:var(--ink);}
-  table.data-table td.num,table.data-table th.num{font-family:'IBM Plex Mono';}
+  table.data-table td.num,table.data-table th.num{font-family:'IBM Plex Mono',monospace;}
   table.data-table tr:hover td{background:#FAFDFB;}
   .export-btn{display:inline-flex;align-items:center;gap:6px;background:#1D6F3E;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;}
   .export-btn:hover{background:#175A32;}
@@ -299,14 +301,14 @@
   .lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:13px;margin-bottom:9px;}
   .lb-row.me{border-color:var(--accent);background:var(--accent-tint);}
   .lb-rank{width:30px;height:30px;border-radius:50%;background:var(--primary-tint);color:var(--primary-dark);
-    display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:800;font-size:13px;flex:none;}
+    display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;font-weight:800;font-size:13px;flex:none;}
   .lb-rank.gold{background:#F5D48A;color:#7A5A16;}
   .lb-rank.silver{background:#DCE3E6;color:#4C5A5F;}
   .lb-rank.bronze{background:#E9C4A0;color:#6B4321;}
   .lb-name{flex:1;}
   .lb-name .n{font-weight:700;font-size:14px;}
   .lb-name .c{font-size:11.5px;color:var(--ink-soft);}
-  .lb-amt{font-family:'IBM Plex Mono';font-weight:700;color:var(--accent);font-size:14.5px;}
+  .lb-amt{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--accent);font-size:14.5px;}
 
   /* ---------- image viewer modal ---------- */
   .img-modal-overlay{
@@ -317,7 +319,7 @@
   .img-modal-inner{display:flex;flex-direction:column;align-items:center;gap:16px;max-width:100%;}
   .img-modal-img{max-width:92vw;max-height:72vh;border-radius:12px;box-shadow:0 24px 60px -12px rgba(0,0,0,.6);background:#fff;}
   .img-modal-actions{display:flex;gap:10px;}
-  .img-modal-actions a,.img-modal-actions button{padding:11px 20px;border-radius:11px;font-weight:700;font-size:13.5px;font-family:'Tajawal';border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .img-modal-actions a,.img-modal-actions button{padding:11px 20px;border-radius:11px;font-weight:700;font-size:13.5px;font-family:'Tajawal',sans-serif;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
   .img-modal-download{background:var(--accent);color:#3A2C08;}
   .img-modal-download:hover{background:#B78A2E;}
   .img-modal-close{background:rgba(255,255,255,.16);color:#fff;}
@@ -345,8 +347,8 @@
 <div id="app"></div>
 <div id="connBanner" style="display:none;position:fixed;top:0;left:0;right:0;background:#7A2A21;color:#fff;text-align:center;font-size:12.5px;padding:7px 10px;z-index:1500;font-weight:700;"></div>
 
-<div id="imgModal" class="img-modal-overlay hidden" onclick="closeImageModal()">
-  <div class="img-modal-inner" onclick="event.stopPropagation()">
+<div id="imgModal" class="img-modal-overlay hidden">
+  <div class="img-modal-inner">
     <img id="imgModalImg" class="img-modal-img" src="" alt="صورة الفاتورة">
     <div class="img-modal-actions">
       <a id="imgModalDownload" class="img-modal-download" href="#" download="فاتورة.jpg">⬇ تحميل الصورة</a>
@@ -355,8 +357,8 @@
   </div>
 </div>
 
-<div id="compareImgModal" class="img-modal-overlay hidden" onclick="closeCompareImageModal()">
-  <div class="img-modal-inner" style="max-width:900px;" onclick="event.stopPropagation()">
+<div id="compareImgModal" class="img-modal-overlay hidden">
+  <div class="img-modal-inner" style="max-width:900px;">
     <div id="compareImgTitle" style="color:#fff;font-weight:800;margin-bottom:10px;text-align:center;"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
       <div style="flex:1;min-width:260px;max-width:420px;">
@@ -375,7 +377,9 @@
 </div>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- SRI: لازم يُضاف integrity="sha384-…" هون. احسبه من الملف الفعلي:
+     curl -s https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 <script>
 /* =========================================================
    نظام عمولات مستودع مسروجي — واجهة متصلة بالباك-إند الحقيقي
@@ -396,7 +400,7 @@
    ========================================================= */
 
 /* ---------------- إعدادات ---------------- */
-const API_BASE = (window.MOSTODAA_API_BASE || 'https://mostodaa-backend-3d1m.onrender.com/api');
+const API_BASE = (globalThis.MOSTODAA_API_BASE || 'https://mostodaa-backend-3d1m.onrender.com/api');
 
 const JORDAN_CITIES = ['عمّان','إربد','الزرقاء','البلقاء (السلط)','المفرق','الكرك','معان','الطفيلة','مأدبا','جرش','عجلون','العقبة'];
 const DEPARTMENTS = [ { value:'MEDICINE', label:'الأدوية', icon:'💊' }, { value:'COSMETICS', label:'الكوزمتك', icon:'💄' } ];
@@ -575,6 +579,13 @@ let accountMsg = null;         // رسالة تبويب الحساب (تغيير
 
 
 /* ---------------- API helper ---------------- */
+function apiErrorMessage(data, status){
+  if(Array.isArray(data?.details) && data.details.length){
+    return data.details.map(d => d.message).join(' — ');
+  }
+  return data?.message ? data.message : ('حدث خطأ (كود ' + status + ')');
+}
+
 async function apiRequest(path, { method='GET', json=null, form=null, auth=true } = {}){
   const headers = {};
   let body;
@@ -596,13 +607,9 @@ async function apiRequest(path, { method='GET', json=null, form=null, auth=true 
   try{ data = await res.json(); }catch(e){ /* رد بدون JSON */ }
 
   if(!res.ok){
-    let msg = data && data.message ? data.message : ('حدث خطأ (كود ' + res.status + ')');
-    if(data && Array.isArray(data.details) && data.details.length){
-      msg = data.details.map(d => d.message).join(' — ');
-    }
-    const err = new Error(msg);
-    err.details = data && data.details;
-    err.code = data && data.code;
+    const err = new Error(apiErrorMessage(data, res.status));
+    err.details = data?.details;
+    err.code = data?.code;
     err.status = res.status;
     if(res.status === 401 && auth && currentUser){ handleUnauthorized(); }
     throw err;
@@ -642,11 +649,11 @@ function toast(msg, kind){
 function esc(value){
   if(value === null || value === undefined) return '';
   return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 function fmtMoney(n){ return Number(n||0).toFixed(3); }
 function fmtMonth(key){
@@ -727,6 +734,20 @@ function closeImageModal(){
   document.getElementById('imgModal').classList.add('hidden');
   document.getElementById('imgModalImg').src = '';
 }
+
+// الخلفية الداكنة للـ modal مجرد backdrop (مش عنصر تفاعلي): الضغط عليها بيسكّر،
+// والمستخدم بالكيبورد عنده زر "إغلاق" + مفتاح Escape.
+function bindModalBackdrop(modalId, closeFn){
+  const overlay = document.getElementById(modalId);
+  overlay.addEventListener('click', e => { if(e.target === overlay) closeFn(); });
+}
+bindModalBackdrop('imgModal', closeImageModal);
+bindModalBackdrop('compareImgModal', closeCompareImageModal);
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(!document.getElementById('compareImgModal').classList.contains('hidden')) closeCompareImageModal();
+  if(!document.getElementById('imgModal').classList.contains('hidden')) closeImageModal();
+});
 
 /* ---------------- render root ---------------- */
 function render(){
@@ -988,16 +1009,12 @@ async function forgotSendOtp(isResend){
   try{
     const res = await apiRequest('/auth/pharmacist/forgot-password/send-otp', { method:'POST', auth:false, json:{ phoneNumber: phone } });
     forgot.phone = phone;
-    forgot.devCode = res.data && res.data.devOtpCode ? res.data.devOtpCode : null;
+    forgot.devCode = res.data?.devOtpCode ? res.data.devOtpCode : null;
     forgot.step = 2;
     toast('تم إرسال رمز التحقق إلى ' + phone);
     render();
   }catch(e){
-    if(e.code === 'ACCOUNT_NOT_FOUND'){
-      toast(e.message, 'danger');
-    } else {
-      toast(e.message, 'danger');
-    }
+    toast(e.message, 'danger');
     if(btn){ btn.disabled = false; btn.textContent = 'إرسال رمز التحقق'; }
   }
 }
@@ -1100,7 +1117,7 @@ async function sendOtp(){
     const res = await apiRequest('/auth/pharmacist/send-otp', { method:'POST', auth:false, json:{ fullName:name, phoneNumber:phone } });
     pendingReg.name = name;
     pendingReg.phone = phone;
-    otpCode = res.data && res.data.devOtpCode ? res.data.devOtpCode : null;
+    otpCode = res.data?.devOtpCode ? res.data.devOtpCode : null;
     otpVerified = false;
     regPhoneExists = false;
     otpSent = true;
@@ -1202,7 +1219,7 @@ async function createAccount(){
   const btn = document.getElementById('createAccBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ الإنشاء...'; }
   try{
-    const res = await apiRequest('/auth/pharmacist/register', { method:'POST', auth:false, json:{
+    await apiRequest('/auth/pharmacist/register', { method:'POST', auth:false, json:{
       verificationToken,
       fullName: pendingReg.name,
       phoneNumber: pendingReg.phone,
@@ -1244,7 +1261,7 @@ async function verifyAdmin2fa(){
   const btn = document.getElementById('admin2faBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ التحقق...'; }
   try{
-    const res = await apiRequest('/auth/admin/verify-2fa', { method:'POST', auth:false, json:{ challengeToken: admin2fa.challengeToken, code } });
+    await apiRequest('/auth/admin/verify-2fa', { method:'POST', auth:false, json:{ challengeToken: admin2fa.challengeToken, code } });
     admin2fa = { challengeToken:null, maskedPhone:'', devCode:null };
     await afterAuthSuccess();
   }catch(e){
@@ -1280,7 +1297,7 @@ async function doLogin(){
     const res = isAdminAttempt
       ? await apiRequest('/auth/admin/login', { method:'POST', auth:false, json:{ username: idValue, password: pass } })
       : await apiRequest('/auth/pharmacist/login', { method:'POST', auth:false, json:{ phoneNumber: idValue, password: pass } });
-    if(res.data && res.data.requires2fa){
+    if(res.data?.requires2fa){
       admin2fa = { challengeToken: res.data.challengeToken, maskedPhone: res.data.maskedPhone || '', devCode: res.data.devOtpCode || null };
       goto('twofa');
       return;
@@ -1370,11 +1387,91 @@ function adminRoleLabel(_u){
   return 'المدير';
 }
 
+const SHELL_WIDE_TABS = ['admin','messages','reports','users','stats','payouts','payoutsHistory','referralAdmin','account','compReportsAsil','compReportsZaroza'];
+// [key, icon, label, cosmeticsAdminOnly]
+const SHELL_USER_TABS = [
+  ['add','＋','إضافة'],
+  ['history','🧾','السجل'],
+  ['payoutInfo','💳','بيانات الاستلام'],
+  ['earnings','💰','مستحقاتي'],
+  ['previousDues','🗓️','التحويلات السابقة'],
+  ['referral','🎁','الإحالة'],
+];
+const SHELL_ADMIN_TABS = [
+  ['admin','⚙️','الإدارة'],
+  ['messages','📨','رسائل جماعية'],
+  ['reports','📊','تقارير العمولات'],
+  ['compReportsAsil','🔄','تعويض الأصيل',true],
+  ['compReportsZaroza','🔄','تعويض زاروزا',true],
+  ['users','🗂️','الأصناف'],
+  ['stats','📈','العملاء المسجلون'],
+  ['payouts','💰','الدفعات الشهرية'],
+  ['payoutsHistory','📜','الدفعات الشهرية السابقة'],
+  ['referralAdmin','🤝','مستحقات الإحالة'],
+  ['account','🔑','حسابي'],
+];
+
+function shellDepartmentBarHtml(){
+  return `
+    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12.5px;font-weight:700;">القسم الحالي: ${deptLabel(selectedDepartment)}</span>
+      <button class="logout" style="padding:6px 10px;" onclick="switchDepartment()">تبديل القسم</button>
+    </div>`;
+}
+function shellSaleModeBarHtml(){
+  return `
+    <div style="margin-top:8px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12.5px;font-weight:700;">نوع العملية: ${saleModeLabel(saleMode)}</span>
+      <button class="logout" style="padding:6px 10px;" onclick="switchSaleMode()">تبديل</button>
+    </div>`;
+}
+function shellAdminPanelBarHtml(){
+  return `
+    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12.5px;font-weight:700;">اللوحة الحالية: ${deptLabel(adminDeptFilter)}</span>
+      <button class="logout" style="padding:6px 10px;" onclick="switchAdminPanel()">تبديل اللوحة</button>
+    </div>`;
+}
+function shellHeaderBarsHtml(isAdmin){
+  if(isAdmin) return shellAdminPanelBarHtml();
+  return shellDepartmentBarHtml() + (selectedDepartment==='COSMETICS' ? shellSaleModeBarHtml() : '');
+}
+
+function shellTabButtonHtml([key, icon, label]){
+  return `<button class="${activeTab===key?'active':''}" onclick="switchTab('${key}')"><span class="ic">${icon}</span>${label}</button>`;
+}
+function shellTabbarHtml(isAdmin){
+  if(!isAdmin) return SHELL_USER_TABS.map(shellTabButtonHtml).join('\n      ');
+  const showCosmetics = isCosmeticsAdminContext();
+  return SHELL_ADMIN_TABS.filter(tab => !tab[3] || showCosmetics).map(shellTabButtonHtml).join('\n      ');
+}
+
+function renderActiveTab(tab){
+  switch(tab){
+    case 'add': return tabAdd();
+    case 'history': return tabHistory();
+    case 'payoutInfo': return tabPayoutInfo();
+    case 'earnings': return tabEarnings();
+    case 'previousDues': return tabPreviousDues();
+    case 'referral': return tabReferral();
+    case 'reports': return tabReports();
+    case 'compReportsAsil': return tabCompReports('ASIL');
+    case 'compReportsZaroza': return tabCompReports('ZAROZA');
+    case 'users': return tabCategoriesMgmt();
+    case 'stats': return tabPharmacists();
+    case 'payouts': return tabPayouts();
+    case 'payoutsHistory': return tabPayoutsHistory();
+    case 'referralAdmin': return tabReferralAdmin();
+    case 'admin': return tabAdmin();
+    case 'messages': return tabMessages();
+    case 'account': return tabAccount();
+    default: return '';
+  }
+}
+
 function screenAppShell(){
   const isAdmin = currentUser.type === 'admin';
-  const isSuperAdmin = isAdmin && currentUser.role === 'SUPER_ADMIN';
-  const wideTabs = ['admin','messages','reports','users','stats','payouts','payoutsHistory','referralAdmin','account','compReportsAsil','compReportsZaroza'];
-  const isWide = wideTabs.includes(activeTab);
+  const isWide = SHELL_WIDE_TABS.includes(activeTab);
   const nameLine = esc(isAdmin ? currentUser.fullName : currentUser.pharmacyName);
   const subLine = isAdmin ? (adminRoleLabel(currentUser) + ' · لوحة التحكم') : (esc(currentUser.fullName) + ' · ' + esc(currentUser.city));
   return `
@@ -1386,60 +1483,14 @@ function screenAppShell(){
       </div>
       <button class="logout" onclick="doLogout()">خروج</button>
     </div>
-    ${!isAdmin ? `
-    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:12.5px;font-weight:700;">القسم الحالي: ${deptLabel(selectedDepartment)}</span>
-      <button class="logout" style="padding:6px 10px;" onclick="switchDepartment()">تبديل القسم</button>
-    </div>` : ''}
-    ${!isAdmin && selectedDepartment==='COSMETICS' ? `
-    <div style="margin-top:8px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:12.5px;font-weight:700;">نوع العملية: ${saleModeLabel(saleMode)}</span>
-      <button class="logout" style="padding:6px 10px;" onclick="switchSaleMode()">تبديل</button>
-    </div>` : ''}
-    ${isAdmin ? `
-    <div style="margin-top:12px;background:rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:12.5px;font-weight:700;">اللوحة الحالية: ${deptLabel(adminDeptFilter)}</span>
-      <button class="logout" style="padding:6px 10px;" onclick="switchAdminPanel()">تبديل اللوحة</button>
-    </div>` : ''}
+    ${shellHeaderBarsHtml(isAdmin)}
   </div>
   <div class="app-body ${isWide?'wide':''}" id="tabContent">
-    ${activeTab==='add' ? tabAdd() : ''}
-    ${activeTab==='history' ? tabHistory() : ''}
-    ${activeTab==='payoutInfo' ? tabPayoutInfo() : ''}
-    ${activeTab==='earnings' ? tabEarnings() : ''}
-    ${activeTab==='previousDues' ? tabPreviousDues() : ''}
-    ${activeTab==='referral' ? tabReferral() : ''}
-    ${activeTab==='reports' ? tabReports() : ''}
-    ${activeTab==='compReportsAsil' ? tabCompReports('ASIL') : ''}
-    ${activeTab==='compReportsZaroza' ? tabCompReports('ZAROZA') : ''}
-    ${activeTab==='users' ? tabCategoriesMgmt() : ''}
-    ${activeTab==='stats' ? tabPharmacists() : ''}
-    ${activeTab==='payouts' ? tabPayouts() : ''}
-    ${activeTab==='payoutsHistory' ? tabPayoutsHistory() : ''}
-    ${activeTab==='referralAdmin' ? tabReferralAdmin() : ''}
-    ${activeTab==='admin' ? tabAdmin() : ''}
-    ${activeTab==='messages' ? tabMessages() : ''}
-    ${activeTab==='account' ? tabAccount() : ''}
+    ${renderActiveTab(activeTab)}
   </div>
   <div class="tabbar-fixed-wrap ${isWide?'wide':''}">
     <div class="tabbar ${isWide?'wide':''}">
-      ${!isAdmin ? `<button class="${activeTab==='add'?'active':''}" onclick="switchTab('add')"><span class="ic">＋</span>إضافة</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='history'?'active':''}" onclick="switchTab('history')"><span class="ic">🧾</span>السجل</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='payoutInfo'?'active':''}" onclick="switchTab('payoutInfo')"><span class="ic">💳</span>بيانات الاستلام</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='earnings'?'active':''}" onclick="switchTab('earnings')"><span class="ic">💰</span>مستحقاتي</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='previousDues'?'active':''}" onclick="switchTab('previousDues')"><span class="ic">🗓️</span>التحويلات السابقة</button>` : ''}
-      ${!isAdmin ? `<button class="${activeTab==='referral'?'active':''}" onclick="switchTab('referral')"><span class="ic">🎁</span>الإحالة</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><span class="ic">⚙️</span>الإدارة</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='messages'?'active':''}" onclick="switchTab('messages')"><span class="ic">📨</span>رسائل جماعية</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='reports'?'active':''}" onclick="switchTab('reports')"><span class="ic">📊</span>تقارير العمولات</button>` : ''}
-      ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsAsil'?'active':''}" onclick="switchTab('compReportsAsil')"><span class="ic">🔄</span>تعويض الأصيل</button>` : ''}
-      ${isAdmin && isCosmeticsAdminContext() ? `<button class="${activeTab==='compReportsZaroza'?'active':''}" onclick="switchTab('compReportsZaroza')"><span class="ic">🔄</span>تعويض زاروزا</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='users'?'active':''}" onclick="switchTab('users')"><span class="ic">🗂️</span>الأصناف</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='stats'?'active':''}" onclick="switchTab('stats')"><span class="ic">📈</span>العملاء المسجلون</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='payouts'?'active':''}" onclick="switchTab('payouts')"><span class="ic">💰</span>الدفعات الشهرية</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='payoutsHistory'?'active':''}" onclick="switchTab('payoutsHistory')"><span class="ic">📜</span>الدفعات الشهرية السابقة</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='referralAdmin'?'active':''}" onclick="switchTab('referralAdmin')"><span class="ic">🤝</span>مستحقات الإحالة</button>` : ''}
-      ${isAdmin ? `<button class="${activeTab==='account'?'active':''}" onclick="switchTab('account')"><span class="ic">🔑</span>حسابي</button>` : ''}
+      ${shellTabbarHtml(isAdmin)}
     </div>
   </div>`;
 }
@@ -1462,32 +1513,57 @@ async function switchTab(tab){
   await loadTabData(tab);
 }
 
+// القسم كوزمتك + نوع العملية تعويض (أصيل/زاروزا)
+function isCompensationSaleMode(){
+  return selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA');
+}
+
+async function loadAddTabData(){
+  if(isCompensationSaleMode()){
+    if(!compensationItemsCache[saleMode]){ await loadCompensationItems(saleMode); render(); }
+  } else {
+    await loadCategories(); render();
+  }
+}
+async function loadThenRender(loader){
+  await loader(); render();
+}
+async function loadMessagesTabData(){
+  if(!pharmacistsCache){ await loadPharmacists(); render(); }
+  if(!messagesCampaignsCache){ await loadMessageCampaigns(); render(); }
+}
+async function loadReferralAdminTabData(){
+  await loadReferralAdmin(); await loadReferralHistory(); render();
+}
+async function loadPharmacistsIfMissing(){
+  if(!pharmacistsCache){ await loadPharmacists(); render(); }
+}
+
+function loadDataForTab(tab){
+  switch(tab){
+    case 'add': return loadAddTabData();
+    case 'history':
+    case 'payoutInfo':
+    case 'earnings': return loadThenRender(loadMySales);
+    case 'previousDues': return loadThenRender(loadPreviousDues);
+    case 'referral': return loadThenRender(loadReferralSummary);
+    case 'admin': return loadThenRender(loadAdminSales);
+    case 'messages': return loadMessagesTabData();
+    case 'users': return loadThenRender(loadCategories);
+    case 'stats': return loadThenRender(loadPharmacists);
+    case 'payouts': return loadThenRender(loadPayouts);
+    case 'payoutsHistory': return loadThenRender(loadPayoutsHistory);
+    case 'referralAdmin': return loadReferralAdminTabData();
+    case 'reports':
+    case 'compReportsAsil':
+    case 'compReportsZaroza': return loadPharmacistsIfMissing();
+    default: return undefined;
+  }
+}
+
 async function loadTabData(tab){
   try{
-    if(tab==='add'){
-      if(selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA')){
-        if(!compensationItemsCache[saleMode]){ await loadCompensationItems(saleMode); render(); }
-      } else {
-        await loadCategories(); render();
-      }
-    }
-    if(tab==='history'){ await loadMySales(); render(); }
-    if(tab==='payoutInfo'){ await loadMySales(); render(); }
-    if(tab==='earnings'){ await loadMySales(); render(); }
-    if(tab==='previousDues'){ await loadPreviousDues(); render(); }
-    if(tab==='referral'){ await loadReferralSummary(); render(); }
-    if(tab==='admin'){ await loadAdminSales(); render(); }
-    if(tab==='messages'){
-      if(!pharmacistsCache){ await loadPharmacists(); render(); }
-      if(!messagesCampaignsCache){ await loadMessageCampaigns(); render(); }
-    }
-    if(tab==='users'){ await loadCategories(); render(); }
-    if(tab==='stats'){ await loadPharmacists(); render(); }
-    if(tab==='payouts'){ await loadPayouts(); render(); }
-    if(tab==='payoutsHistory'){ await loadPayoutsHistory(); render(); }
-    if(tab==='referralAdmin'){ await loadReferralAdmin(); await loadReferralHistory(); render(); }
-    if(tab==='reports' && !pharmacistsCache){ await loadPharmacists(); render(); }
-    if((tab==='compReportsAsil' || tab==='compReportsZaroza') && !pharmacistsCache){ await loadPharmacists(); render(); }
+    await loadDataForTab(tab);
   }catch(e){ toast(e.message, 'danger'); }
 }
 
@@ -1539,18 +1615,8 @@ async function loadPayoutsHistory(){
 
 /* -------------------- تبويب: إضافة / تعديل عملية بيع -------------------- */
 /* -------------------- تبويب: إضافة / تعديل عملية بيع -------------------- */
-function tabAdd(){
-  if(selectedDepartment==='COSMETICS' && (saleMode==='ASIL' || saleMode==='ZAROZA')){
-    return tabAddCompensation();
-  }
-  if(CATEGORIES.length===0){
-    return `<div class="section-title">إضافة عملية بيع</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
-  }
-  const isEditing = false;
-
-  if(lastSubmittedSale){
-    const s = lastSubmittedSale;
-    return `
+function renderSubmittedSaleTicket(s){
+  return `
     <div class="ticket">
       <div class="commission-hero">
         <div class="lbl">⏳ تم إرسال العملية للمراجعة</div>
@@ -1568,9 +1634,33 @@ function tabAdd(){
     </div>
     <button class="btn" onclick="finalizeSale()">تسجيل عملية بيع جديدة</button>
     <button class="btn ghost" style="margin-top:10px;" onclick="goToHistoryAfterSale()">📜 مراجعة سجل المبيعات</button>`;
-  }
+}
+function renderQtyStep(){
+  return `
+  <div class="step-block ${addFlow.qty?'step-done':''}">
+    <div class="step-label"><span class="step-num">2</span> عدد القطع المباعة</div>
+    <div class="row2">
+      <input type="number" id="qtyInput" min="1" step="1" placeholder="مثال: 5" value="${addFlow.qty||''}">
+      <button class="btn sm" style="flex:0 0 auto;" onclick="saveQty()">حفظ</button>
+    </div>
+  </div>`;
+}
+function categoryOptionsHtml(){
+  return CATEGORIES.map(c=>`<option value="${c.id}" ${addFlow.categoryId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.effectiveCommissionPerUnit ?? c.commissionPerUnit)} دينار/قطعة</option>`).join('');
+}
 
-  const cat = CATEGORIES.find(c=>c.id===addFlow.categoryId);
+function tabAdd(){
+  if(isCompensationSaleMode()){
+    return tabAddCompensation();
+  }
+  if(CATEGORIES.length===0){
+    return `<div class="section-title">إضافة عملية بيع</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
+  }
+  const isEditing = false;
+
+  if(lastSubmittedSale){
+    return renderSubmittedSaleTicket(lastSubmittedSale);
+  }
 
   return `
   <div class="section-title">${isEditing ? 'تعديل عملية بيع' : 'تسجيل عملية بيع'}</div>
@@ -1580,37 +1670,19 @@ function tabAdd(){
     <div class="step-label"><span class="step-num">1</span> اختر الصنف</div>
     <select class="cat-select" onchange="pickCategory(this.value)">
       <option value="" ${!addFlow.categoryId?'selected':''} disabled>اختر صنف المنتج</option>
-      ${CATEGORIES.map(c=>`<option value="${c.id}" ${addFlow.categoryId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.effectiveCommissionPerUnit ?? c.commissionPerUnit)} دينار/قطعة</option>`).join('')}
+      ${categoryOptionsHtml()}
     </select>
   </div>
 
-  ${addFlow.categoryId ? `
-  <div class="step-block ${addFlow.qty?'step-done':''}">
-    <div class="step-label"><span class="step-num">2</span> عدد القطع المباعة</div>
-    <div class="row2">
-      <input type="number" id="qtyInput" min="1" step="1" placeholder="مثال: 5" value="${addFlow.qty||''}">
-      <button class="btn sm" style="flex:0 0 auto;" onclick="saveQty()">حفظ</button>
-    </div>
-  </div>` : ''}
+  ${addFlow.categoryId ? renderQtyStep() : ''}
 
   ${addFlow.qty ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'حفظ وتسجيل العمولة', false) : ''}
   `;
 }
 
 /* -------------------- تبويب: إضافة عملية تعويض (الأصيل / زاروزا) -------------------- */
-function tabAddCompensation(){
-  const title = saleMode==='ASIL' ? 'تسجيل تعويض الأصيل' : 'تسجيل تعويض زاروزا';
-  const items = compensationItemsCache[saleMode];
-
-  if(items===null || items===undefined){
-    return `<div class="section-title">${title}</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
-  }
-
-  const isEditing = false;
-
-  if(lastSubmittedSale){
-    const s = lastSubmittedSale;
-    return `
+function renderSubmittedCompensationTicket(s){
+  return `
     <div class="ticket">
       <div class="commission-hero">
         <div class="lbl" style="font-size:16px;font-weight:800;">✅ تم إرسال طلب التعويض بنجاح</div>
@@ -1625,6 +1697,34 @@ function tabAddCompensation(){
     </div>
     <button class="btn" onclick="finalizeSale()">تسجيل عملية جديدة</button>
     <button class="btn ghost" style="margin-top:10px;" onclick="goToHistoryAfterSale()">📜 مراجعة سجل المبيعات</button>`;
+}
+function compensationOptionsHtml(items, selectedId){
+  return items.map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.price)} دينار</option>`).join('');
+}
+function renderFreeItemStep(items, mainItem){
+  return `
+  <div class="step-block ${addFlow.freeItemId?'step-done':''}">
+    <div class="step-label"><span class="step-num">2</span> اختر الصنف الفري (المجاني)</div>
+    <select class="cat-select" onchange="pickFreeItem(this.value)">
+      <option value="" ${!addFlow.freeItemId?'selected':''} disabled>اختر الصنف الفري</option>
+      ${compensationOptionsHtml(items, addFlow.freeItemId)}
+    </select>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">* يجب أن يكون سعر الصنف الفري أقل من أو يساوي سعر الصنف الأساسي (${fmtMoney(mainItem.price)} دينار)</div>
+  </div>`;
+}
+
+function tabAddCompensation(){
+  const title = saleMode==='ASIL' ? 'تسجيل تعويض الأصيل' : 'تسجيل تعويض زاروزا';
+  const items = compensationItemsCache[saleMode];
+
+  if(items===null || items===undefined){
+    return `<div class="section-title">${title}</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
+  }
+
+  const isEditing = false;
+
+  if(lastSubmittedSale){
+    return renderSubmittedCompensationTicket(lastSubmittedSale);
   }
 
   if(items.length===0){
@@ -1647,19 +1747,11 @@ function tabAddCompensation(){
     <div class="step-label"><span class="step-num">1</span> اختر الصنف</div>
     <select class="cat-select" onchange="pickMainItem(this.value)">
       <option value="" ${!addFlow.mainItemId?'selected':''} disabled>اختر صنف المنتج</option>
-      ${items.map(c=>`<option value="${c.id}" ${addFlow.mainItemId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.price)} دينار</option>`).join('')}
+      ${compensationOptionsHtml(items, addFlow.mainItemId)}
     </select>
   </div>
 
-  ${addFlow.mainItemId ? `
-  <div class="step-block ${addFlow.freeItemId?'step-done':''}">
-    <div class="step-label"><span class="step-num">2</span> اختر الصنف الفري (المجاني)</div>
-    <select class="cat-select" onchange="pickFreeItem(this.value)">
-      <option value="" ${!addFlow.freeItemId?'selected':''} disabled>اختر الصنف الفري</option>
-      ${items.map(c=>`<option value="${c.id}" ${addFlow.freeItemId===c.id?'selected':''}>${esc(c.name)} — ${fmtMoney(c.price)} دينار</option>`).join('')}
-    </select>
-    <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">* يجب أن يكون سعر الصنف الفري أقل من أو يساوي سعر الصنف الأساسي (${fmtMoney(mainItem.price)} دينار)</div>
-  </div>` : ''}
+  ${addFlow.mainItemId ? renderFreeItemStep(items, mainItem) : ''}
 
   ${addFlow.freeItemId ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'إرسال طلب التعويض', true) : ''}
   `;
@@ -1743,7 +1835,7 @@ function toggleDateEdit(){ addFlow.dateEditing = true; render(); }
 function pickCategory(id){ addFlow.categoryId = id; addFlow.qty=null; addFlow.date=null; addFlow.dateEditing=false; pendingInvoiceFile=null; pendingInvoicePreview=null; render(); }
 
 function saveQty(){
-  const v = parseInt(document.getElementById('qtyInput').value, 10);
+  const v = Number.parseInt(document.getElementById('qtyInput').value, 10);
   if(!v || v < 1){ toast('الرجاء إدخال عدد قطع صحيح', 'danger'); return; }
   addFlow.qty = v;
   if(!addFlow.date) addFlow.date = toLocalDateStr(new Date());
@@ -1816,7 +1908,7 @@ function finalizeSale(){
 // لنوع العملية اللي لسا مسجّلها (عادية / تعويض الأصيل / تعويض زاروزا) عشان يشوفها فورًا.
 // (قسم الأدوية دايمًا "عادية" وبتنضبط تلقائيًا بـ switchTab.)
 function goToHistoryAfterSale(){
-  const type = (lastSubmittedSale && lastSubmittedSale.saleType) || saleMode || 'NORMAL';
+  const type = lastSubmittedSale?.saleType || saleMode || 'NORMAL';
   historyFilterType = (type==='ASIL' || type==='ZAROZA') ? type : 'NORMAL';
   historyStatusFilter = 'ALL';
   showFreeItemsSummary = false;
@@ -1834,26 +1926,11 @@ function saleItemLabel(s){
 }
 
 /* -------------------- تبويب: السجل -------------------- */
-function tabHistory(){
-  if(mySalesCache===null){
-    return `<div class="section-title">سجل المبيعات</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
-  }
-  if(selectedDepartment==='MEDICINE') historyFilterType = 'NORMAL';
-
-  // فلترة حسب نوع الفاتورة (Pill الأول) — NORMAL دايمًا مقيّد بالقسم الحالي حتى جوا "الكل"
+function historyVisibleSales(){
   const byDept = mySalesCache.filter(s => (s.saleType||'NORMAL')!=='NORMAL' || s.department===selectedDepartment);
-  const mySales = historyFilterType==='ALL' ? byDept : byDept.filter(s => (s.saleType||'NORMAL')===historyFilterType);
-
-  const isCompOnly = historyFilterType==='ASIL' || historyFilterType==='ZAROZA';
-
-  const approvedList = mySales.filter(s=>s.status==='APPROVED');
-  const pendingList  = mySales.filter(s=>s.status==='PENDING');
-  const rejectedList = mySales.filter(s=>s.status==='REJECTED');
-  const approvedTotal = approvedList.reduce((sum,s)=>sum+Number(s.commissionAmount),0);
-
-  // فلترة حسب الحالة (Pill الثاني) — تُطبَّق فوق فلتر النوع، بعد حساب الملخص أعلاه
-  const shown = historyStatusFilter==='ALL' ? mySales : mySales.filter(s=>s.status===historyStatusFilter);
-
+  return historyFilterType==='ALL' ? byDept : byDept.filter(s => (s.saleType||'NORMAL')===historyFilterType);
+}
+function historyHeaderHtml(){
   const typePills = historyTypePills();
   const pillsTypeHtml = typePills.length ? `
   <div class="filter-pills">
@@ -1864,10 +1941,20 @@ function tabHistory(){
   <div class="filter-pills" style="margin-bottom:14px;">
     ${HISTORY_STATUS_PILLS.map(f=>`<button class="pill sub ${f.value} ${historyStatusFilter===f.value?'active':''}" onclick="pickHistoryStatus('${f.value}')">${esc(f.label)}</button>`).join('')}
   </div>`;
-
-  const freeItemsBtn = isCompOnly ? `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة'}</button>` : '';
-
-  const summaryHtml = `
+  return `
+  <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
+  ${pillsTypeHtml}
+  ${pillsStatusHtml}`;
+}
+function historyFreeItemsBtnHtml(isCompOnly){
+  return isCompOnly ? `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة'}</button>` : '';
+}
+function historySummaryHtml(mySales, isCompOnly){
+  const approvedList = mySales.filter(s=>s.status==='APPROVED');
+  const pendingList  = mySales.filter(s=>s.status==='PENDING');
+  const rejectedList = mySales.filter(s=>s.status==='REJECTED');
+  const approvedTotal = approvedList.reduce((sum,s)=>sum+Number(s.commissionAmount),0);
+  return `
   <div class="hs-grid">
     <div class="hs-box ok">
       <div class="lbl">مقبولة</div>
@@ -1882,11 +1969,23 @@ function tabHistory(){
       <div class="val num">${rejectedList.length}</div>
     </div>
   </div>`;
+}
 
-  const header = `
-  <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
-  ${pillsTypeHtml}
-  ${pillsStatusHtml}`;
+function tabHistory(){
+  if(mySalesCache===null){
+    return `<div class="section-title">سجل المبيعات</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  }
+  if(selectedDepartment==='MEDICINE') historyFilterType = 'NORMAL';
+
+  const mySales = historyVisibleSales();
+
+  const isCompOnly = historyFilterType==='ASIL' || historyFilterType==='ZAROZA';
+
+  // فلترة حسب الحالة (Pill الثاني) — تُطبَّق فوق فلتر النوع، بعد حساب الملخص أعلاه
+  const shown = historyStatusFilter==='ALL' ? mySales : mySales.filter(s=>s.status===historyStatusFilter);
+
+  const header = historyHeaderHtml();
+  const summaryHtml = historySummaryHtml(mySales, isCompOnly);
 
   if(mySales.length===0){
     return `
@@ -1911,7 +2010,7 @@ function tabHistory(){
 
   return `
   ${header}
-  ${freeItemsBtn}
+  ${historyFreeItemsBtnHtml(isCompOnly)}
   ${isCompOnly && showFreeItemsSummary ? freeItemsSummaryHtml(mySales) : ''}
   ${summaryHtml}
   ${renderHistoryTickets(shown)}
@@ -1919,6 +2018,31 @@ function tabHistory(){
 }
 
 // يرسم بطاقات الفواتير مع عناوين فاصلة بين الأيام/الأشهر (اليوم / أمس / أيلول ٢٠٢٦...)
+function historyTicketBodyHtml(s, isComp){
+  return isComp ? `
+          <div class="cat" style="margin-bottom:3px;">القطعة المباعة : <b>${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
+          <div class="cat" style="margin-bottom:3px;">قطعة التعويض : <b>${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
+          <div class="meta">${fmtDate(s.saleDate)}</div>
+          ` : `
+          <div class="cat">${saleItemLabel(s)}</div>
+          <div class="meta">${s.quantity} قطعة · ${fmtDate(s.saleDate)}${s.invoiceNumber ? ' · فاتورة ' + esc(s.invoiceNumber) : ''}</div>
+          `;
+}
+function historyTicketHtml(s, isComp){
+  return `
+    <div class="ticket">
+      <div class="sale-row">
+        ${s.invoiceImageUrl ? `<img class="thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
+        <div style="flex:1;">
+          ${historyTicketBodyHtml(s, isComp)}
+          <div style="margin-top:5px;">${statusBadgeHtml(s)}</div>
+          ${s.status==='REJECTED' ? `<div class="reject-box"><span class="ic">⚠️</span><div><b>تم رفض الطلب</b><br>السبب: ${esc(s.rejectionReason||'غير محدد')}</div></div>` : ''}
+        </div>
+        ${isComp ? '' : `<div class="commission">${fmtMoney(s.commissionAmount)} د.أ</div>`}
+      </div>
+    </div>`;
+}
+
 function renderHistoryTickets(list){
   let lastGroup = null;
   let out = '';
@@ -1929,25 +2053,7 @@ function renderHistoryTickets(list){
       lastGroup = group;
     }
     const isComp = (s.saleType||'NORMAL')==='ASIL' || (s.saleType||'NORMAL')==='ZAROZA';
-    out += `
-    <div class="ticket">
-      <div class="sale-row">
-        ${s.invoiceImageUrl ? `<img class="thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
-        <div style="flex:1;">
-          ${isComp ? `
-          <div class="cat" style="margin-bottom:3px;">القطعة المباعة : <b>${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
-          <div class="cat" style="margin-bottom:3px;">قطعة التعويض : <b>${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
-          <div class="meta">${fmtDate(s.saleDate)}</div>
-          ` : `
-          <div class="cat">${saleItemLabel(s)}</div>
-          <div class="meta">${s.quantity} قطعة · ${fmtDate(s.saleDate)}${s.invoiceNumber ? ' · فاتورة ' + esc(s.invoiceNumber) : ''}</div>
-          `}
-          <div style="margin-top:5px;">${statusBadgeHtml(s)}</div>
-          ${s.status==='REJECTED' ? `<div class="reject-box"><span class="ic">⚠️</span><div><b>تم رفض الطلب</b><br>السبب: ${esc(s.rejectionReason||'غير محدد')}</div></div>` : ''}
-        </div>
-        ${isComp ? '' : `<div class="commission">${fmtMoney(s.commissionAmount)} د.أ</div>`}
-      </div>
-    </div>`;
+    out += historyTicketHtml(s, isComp);
   }
   return out;
 }
@@ -1955,10 +2061,10 @@ function renderHistoryTickets(list){
 function freeItemsSummaryHtml(mySales){
   const approved = mySales.filter(s=>s.status==='APPROVED');
   const counts = {};
-  approved.forEach(s=>{
+  for(const s of approved){
     const name = s.freeCompensationItem ? s.freeCompensationItem.name : 'غير محدد';
     counts[name] = (counts[name]||0) + 1;
-  });
+  }
   const entries = Object.entries(counts);
   if(entries.length===0){
     return `
@@ -2014,13 +2120,8 @@ function computeMyPayoutSummary(){
 }
 
 /* -------------------- تبويب: بيانات الاستلام -------------------- */
-function tabPayoutInfo(){
-  const savedType = currentUser.payoutType || '';
-  const savedValue = currentUser.payoutValue || '';
-  const isFirstTime = !savedType && !savedValue;
-
-  if(isFirstTime && !payoutIntroAcked){
-    return `
+function payoutIntroHtml(){
+  return `
     <div class="section-title">بيانات الاستلام</div>
     <div class="otp-banner" style="display:block;line-height:1.9;margin-bottom:14px;">
       💡 يتم تحويل المستحقات <b>مرة واحدة كل شهر (يوم 1)</b> عن فواتير الشهر الماضي المقبولة. الفواتير المرسلة من أول الشهر الجديد بتنحسب بالدفعة اللي بعدها.
@@ -2029,15 +2130,35 @@ function tabPayoutInfo(){
       🔒 لحمايتك، تغيير بيانات الاستلام لاحقًا يحتاج رمز تحقق يوصلك على هاتفك المسجّل.
     </div>
     <button class="btn" onclick="ackPayoutIntro()">موافق، متابعة</button>`;
-  }
-
-  if(!payoutDraft) payoutDraft = { type: savedType, value: savedValue };
-
-  // بعد أول مرة: الحقول تُعرض مقفولة (غير قابلة للتعديل) لحد ما يضغط "تعديل"
-  // ويتحقق برمز يوصله على هاتفه المسجّل
-  if(!isFirstTime && !payoutEditUnlocked){
-    const editedToday = checkPayoutEditedToday();
+}
+function payoutLockedActionsHtml(editedToday){
+  if(editedToday){
     return `
+    <div class="otp-banner" style="display:block;">
+      لقد عدّلت بيانات الاستلام اليوم بالفعل — التعديل مسموح مرة واحدة فقط يوميًا، حاول غدًا.
+    </div>`;
+  }
+  if(!payoutEditOtpSent){
+    return `
+    <button class="btn ghost" onclick="startPayoutEdit()">✏️ تعديل طريقة الاستلام</button>
+    `;
+  }
+  return `
+    <p style="color:var(--ink-soft);font-size:13px;line-height:1.7;margin:0 0 12px;">
+      أدخل رمز التحقق المُرسل إلى هاتفك المسجّل لفتح التعديل.
+    </p>
+    ${payoutEditOtpDev ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(payoutEditOtpDev)}</span></div>` : ''}
+    <div class="field">
+      <label>رمز التحقق (6 أرقام)</label>
+      <input type="text" id="payoutEditOtpInput" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
+    </div>
+    <button class="btn" onclick="verifyPayoutEditOtp()">تأكيد وفتح التعديل</button>
+    <div style="text-align:center;margin-top:10px;"><button class="link-btn" onclick="startPayoutEdit()">إعادة إرسال الرمز</button></div>
+    `;
+}
+function payoutLockedHtml(savedType, savedValue){
+    const editedToday = checkPayoutEditedToday();
+  return `
     <div class="section-title">بيانات الاستلام</div>
     <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
       هذه بيانات استلام مستحقاتك المالية الحالية.
@@ -2054,31 +2175,22 @@ function tabPayoutInfo(){
       <input type="text" value="${esc(savedValue)}" disabled style="background:#F0F3F2;color:var(--ink-soft);">
     </div>
 
-    ${editedToday ? `
-    <div class="otp-banner" style="display:block;">
-      لقد عدّلت بيانات الاستلام اليوم بالفعل — التعديل مسموح مرة واحدة فقط يوميًا، حاول غدًا.
-    </div>` : `
-    ${!payoutEditOtpSent ? `
-    <button class="btn ghost" onclick="startPayoutEdit()">✏️ تعديل طريقة الاستلام</button>
-    ` : `
-    <p style="color:var(--ink-soft);font-size:13px;line-height:1.7;margin:0 0 12px;">
-      أدخل رمز التحقق المُرسل إلى هاتفك المسجّل لفتح التعديل.
-    </p>
-    ${payoutEditOtpDev ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(payoutEditOtpDev)}</span></div>` : ''}
-    <div class="field">
-      <label>رمز التحقق (6 أرقام)</label>
-      <input type="text" id="payoutEditOtpInput" maxlength="6" inputmode="numeric" placeholder="XXXXXX">
-    </div>
-    <button class="btn" onclick="verifyPayoutEditOtp()">تأكيد وفتح التعديل</button>
-    <div style="text-align:center;margin-top:10px;"><button class="link-btn" onclick="startPayoutEdit()">إعادة إرسال الرمز</button></div>
-    `}
-    `}
+    ${payoutLockedActionsHtml(editedToday)}
     `;
-  }
-
-  // التعديل مفتوح (أول مرة، أو بعد التحقق من الرمز): الحقول قابلة للتعديل بشكل طبيعي
-  const type = payoutDraft.type || '';
-
+}
+function payoutValueFieldHtml(type, isFirstTime){
+  return `
+  <div class="field">
+    <label>${type==='PHONE' ? 'رقم الهاتف لاستلام الدفعة' : 'الاسم المستعار'}</label>
+    <input type="${type==='PHONE' ? 'tel' : 'text'}" id="payoutValue" ${type==='PHONE' ? 'maxlength="10" inputmode="numeric"' : 'maxlength="50"'}
+      placeholder="${type==='PHONE' ? 'مثال: 07XXXXXXXX' : 'مثال: اسم المحفظة أو الحساب'}"
+      value="${esc(payoutDraft.value)}" oninput="onPayoutValueInput(this.value)">
+  </div>
+  <button class="btn" id="savePayoutBtn" onclick="savePayoutInfo()">حفظ</button>
+  ${!isFirstTime ? `<div style="text-align:center;margin-top:10px;"><button class="link-btn" onclick="cancelPayoutEdit()">إلغاء</button></div>` : ''}
+  `;
+}
+function payoutEditFormHtml(type, isFirstTime){
   return `
   <div class="section-title">بيانات الاستلام</div>
   <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.7;margin:-6px 0 18px;">
@@ -2094,17 +2206,29 @@ function tabPayoutInfo(){
     </select>
   </div>
 
-  ${type ? `
-  <div class="field">
-    <label>${type==='PHONE' ? 'رقم الهاتف لاستلام الدفعة' : 'الاسم المستعار'}</label>
-    <input type="${type==='PHONE' ? 'tel' : 'text'}" id="payoutValue" ${type==='PHONE' ? 'maxlength="10" inputmode="numeric"' : 'maxlength="50"'}
-      placeholder="${type==='PHONE' ? 'مثال: 07XXXXXXXX' : 'مثال: اسم المحفظة أو الحساب'}"
-      value="${esc(payoutDraft.value)}" oninput="onPayoutValueInput(this.value)">
-  </div>
-  <button class="btn" id="savePayoutBtn" onclick="savePayoutInfo()">حفظ</button>
-  ${!isFirstTime ? `<div style="text-align:center;margin-top:10px;"><button class="link-btn" onclick="cancelPayoutEdit()">إلغاء</button></div>` : ''}
-  ` : ''}
+  ${type ? payoutValueFieldHtml(type, isFirstTime) : ''}
   `;
+}
+
+function tabPayoutInfo(){
+  const savedType = currentUser.payoutType || '';
+  const savedValue = currentUser.payoutValue || '';
+  const isFirstTime = !savedType && !savedValue;
+
+  if(isFirstTime && !payoutIntroAcked){
+    return payoutIntroHtml();
+  }
+
+  if(!payoutDraft) payoutDraft = { type: savedType, value: savedValue };
+
+  // بعد أول مرة: الحقول تُعرض مقفولة (غير قابلة للتعديل) لحد ما يضغط "تعديل"
+  // ويتحقق برمز يوصله على هاتفه المسجّل
+  if(!isFirstTime && !payoutEditUnlocked){
+    return payoutLockedHtml(savedType, savedValue);
+  }
+
+  // التعديل مفتوح (أول مرة، أو بعد التحقق من الرمز): الحقول قابلة للتعديل بشكل طبيعي
+  return payoutEditFormHtml(payoutDraft.type || '', isFirstTime);
 }
 
 function ackPayoutIntro(){
@@ -2116,7 +2240,7 @@ async function startPayoutEdit(){
   try{
     const r = await apiRequest('/users/me/payout/send-otp', { method:'POST' });
     payoutEditOtpSent = true;
-    payoutEditOtpDev = r.data && r.data.devOtpCode ? r.data.devOtpCode : null;
+    payoutEditOtpDev = r.data?.devOtpCode ? r.data.devOtpCode : null;
     toast('تم إرسال رمز التحقق إلى هاتفك');
     render();
   }catch(e){ toast(e.message, 'danger'); }
@@ -2146,7 +2270,7 @@ function checkPayoutEditedToday(){
   }catch(e){ return false; }
 }
 function markPayoutEditedToday(){
-  try{ localStorage.setItem('mm_payout_last_edit_date', toLocalDateStr(new Date())); }catch(e){}
+  try{ localStorage.setItem('mm_payout_last_edit_date', toLocalDateStr(new Date())); }catch(e){ /* التخزين المحلي غير متاح — التسجيل اختياري */ }
 }
 
 function onPayoutTypeChange(v){
@@ -2293,7 +2417,7 @@ function tabReferral(){
     return `<div class="section-title">🎁 إحالة صيدلي</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
   const s = referralSummaryCache;
-  const referralLink = window.location.origin + window.location.pathname + '?ref=' + s.referralCode;
+  const referralLink = globalThis.location.origin + globalThis.location.pathname + '?ref=' + s.referralCode;
 
   return `
   <div class="section-title">🎁 إحالة صيدلي</div>
@@ -2362,7 +2486,7 @@ function tabReferral(){
 }
 
 function copyReferralText(text){
-  if(navigator.clipboard && navigator.clipboard.writeText){
+  if(navigator.clipboard?.writeText){
     navigator.clipboard.writeText(text).then(()=>toast('تم النسخ ✓')).catch(()=>toast('تعذر النسخ، انسخه يدويًا', 'danger'));
   } else {
     toast('تعذر النسخ التلقائي بهذا المتصفح، انسخه يدويًا', 'danger');
@@ -2370,34 +2494,18 @@ function copyReferralText(text){
 }
 
 /* -------------------- قائمة مراجعة الفواتير (لوحة الأدمن) -------------------- */
-function renderReviewQueue(){
-  const showDept = !!adminPharmacistFilter;
-  const pendingSales = (adminSalesCache||[]).filter(s=>s.status==='PENDING').sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
-  return `
-  <div class="admin-section">
-    <div class="section-title">مراجعة الفواتير ${pendingSales.length>0 ? `<span class="badge pending" style="margin-right:8px;">${pendingSales.length}</span>` : ''}</div>
-    ${pendingSales.length===0 ? `<div class="empty-state"><div class="ic">✅</div><div class="t">لا توجد فواتير بانتظار المراجعة</div></div>` : `
-    ${pendingSales.map(s=>{
-      const p = s.pharmacist;
-      const isRejecting = rejectingId === s.id;
-      const isComp = s.saleType==='ASIL' || s.saleType==='ZAROZA';
-      return `
-      <div class="review-card">
-        <div class="review-top">
-          ${s.invoiceImageUrl ? `<img class="review-thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
-          <div class="review-info">
-            <div class="n">${esc(p ? p.pharmacyName : '')} ${isComp ? `<span class="badge" style="background:var(--primary-tint);color:var(--primary-dark);">${saleModeLabel(s.saleType)}</span>` : ''} ${showDept ? `<span class="badge" style="background:var(--primary-tint);color:var(--primary-dark);">${deptLabel(s.department)}</span>` : ''}</div>
-            ${isComp ? `
+function reviewInfoHtml(s, isComp){
+  return isComp ? `
             <div class="m" style="margin-top:5px;">القطعة المباعة : <b style="color:var(--ink);">${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
             <div class="m">قطعة التعويض : <b style="color:var(--ink);">${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
             <div class="m">${fmtDate(s.saleDate)}</div>
             ` : `
             <div class="n" style="margin-top:2px;">${saleItemLabel(s)}</div>
             <div class="m">${s.quantity} قطعة · ${fmtDate(s.saleDate)}<br>عمولة متوقعة: <b class="num">${fmtMoney(s.commissionAmount)} د.أ</b></div>
-            `}
-            <div class="m" style="margin-top:3px;">رقم الفاتورة: <b class="num" style="color:var(--ink);">${esc(s.invoiceNumber || '—')}</b> · أُرسلت: ${fmtDate(s.createdAt)}</div>
-          </div>
-        </div>
+            `;
+}
+function reviewWarningsHtml(s){
+  return `
         ${s.isDuplicate ? `<div class="dup-warning">⚠️ يوجد سجل آخر بنفس الصنف/الكمية/التاريخ لنفس الصيدلي — الرجاء التدقيق قبل القبول</div>` : ''}
         ${s.duplicateImageCount > 0 ? `<div class="dup-warning">⚠️ نفس صورة الفاتورة مستخدمة في ${s.duplicateImageCount} عملية أخرى — تأكد إنها مش نفس الفاتورة مكررة</div>` : ''}
         ${s.invoiceNumberSharedWithOthers ? `<div class="dup-warning">⚠️ رقم الفاتورة هذا مستخدم من صيدلي آخر — الرجاء التدقيق</div>` : ''}
@@ -2405,7 +2513,10 @@ function renderReviewQueue(){
           🔎 صورة مشابهة بنسبة ${s.similarInvoiceImage.similarity}% لفاتورة ${s.similarInvoiceImage.sameOwner ? 'أخرى لنفس الصيدلي' : `من "${esc(s.similarInvoiceImage.pharmacyName)}"`} — ممكن تكون نفس الفاتورة اتصوّرت مرتين
           <button class="btn ghost sm" style="margin-right:6px;padding:3px 10px;" onclick="openCompareImageModal('${s.invoiceImageUrl}','${s.similarInvoiceImage.imageUrl}',${s.similarInvoiceImage.similarity})">🖼️ قارن الصورتين</button>
         </div>` : ''}
-        ${isRejecting ? `
+  `;
+}
+function reviewActionsHtml(s, isRejecting){
+  return isRejecting ? `
         <div class="field" style="margin-top:10px;margin-bottom:0;">
           <textarea id="rejectReason_${s.id}" rows="2" placeholder="اكتب سبب الرفض هنا... (3 أحرف على الأقل)"></textarea>
         </div>
@@ -2416,9 +2527,35 @@ function renderReviewQueue(){
         <div class="review-actions">
           <button class="btn approve sm" onclick="approveSale('${s.id}')">✓ قبول</button>
           <button class="btn danger sm" onclick="startReject('${s.id}')">✕ رفض</button>
-        </div>`}
+        </div>`;
+}
+function reviewCardHtml(s, showDept){
+  const p = s.pharmacist;
+  const isRejecting = rejectingId === s.id;
+  const isComp = s.saleType==='ASIL' || s.saleType==='ZAROZA';
+  return `
+      <div class="review-card">
+        <div class="review-top">
+          ${s.invoiceImageUrl ? `<img class="review-thumb" src="${s.invoiceImageUrl}" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">` : ''}
+          <div class="review-info">
+            <div class="n">${esc(p ? p.pharmacyName : '')} ${isComp ? `<span class="badge" style="background:var(--primary-tint);color:var(--primary-dark);">${saleModeLabel(s.saleType)}</span>` : ''} ${showDept ? `<span class="badge" style="background:var(--primary-tint);color:var(--primary-dark);">${deptLabel(s.department)}</span>` : ''}</div>
+            ${reviewInfoHtml(s, isComp)}
+            <div class="m" style="margin-top:3px;">رقم الفاتورة: <b class="num" style="color:var(--ink);">${esc(s.invoiceNumber || '—')}</b> · أُرسلت: ${fmtDate(s.createdAt)}</div>
+          </div>
+        </div>
+        ${reviewWarningsHtml(s)}
+        ${reviewActionsHtml(s, isRejecting)}
       </div>`;
-    }).join('')}
+}
+
+function renderReviewQueue(){
+  const showDept = !!adminPharmacistFilter;
+  const pendingSales = (adminSalesCache||[]).filter(s=>s.status==='PENDING').sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
+  return `
+  <div class="admin-section">
+    <div class="section-title">مراجعة الفواتير ${pendingSales.length>0 ? `<span class="badge pending" style="margin-right:8px;">${pendingSales.length}</span>` : ''}</div>
+    ${pendingSales.length===0 ? `<div class="empty-state"><div class="ic">✅</div><div class="t">لا توجد فواتير بانتظار المراجعة</div></div>` : `
+    ${pendingSales.map(s => reviewCardHtml(s, showDept)).join('')}
     `}
   </div>`;
 }
@@ -2635,7 +2772,7 @@ async function confirmMessageSend(){
 // (بدون render() كامل، عشان ما نقطع الكتابة أو إدخال الرمز لو الأدمن عم يجهّز حملة ثانية)
 const messagePollers = new Set();
 function messageCampaignInProgress(c){
-  const k = (c && c.counts) || {};
+  const k = c?.counts || {};
   return (k.PENDING||0) + (k.SENDING||0) > 0;
 }
 function refreshMessageProgressDom(){
@@ -2691,18 +2828,10 @@ function messageStatusBadge(status){
   return `<span class="badge pending">⏳ بالانتظار</span>`;
 }
 
-function renderMessagesCampaignsList(){
-  const list = messagesCampaignsCache || [];
-  if(list.length===0) return `<div class="empty-state"><div class="ic">📨</div><div class="t">ما في حملات مُرسلة بعد</div></div>`;
-  return `
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead><tr><th>الحملة</th><th>نص الرسالة</th><th class="num">المستلمون</th><th class="num">⏳ جارٍ</th><th class="num">🟢 تسليم</th><th class="num">📤 إرسال</th><th class="num">✕ فشل</th><th>التاريخ</th><th></th></tr></thead>
-      <tbody>
-      ${list.map(c=>{
-        const counts = c.counts || {};
-        const preview = (c.text||'').length>60 ? esc(c.text.slice(0,60))+'…' : esc(c.text||'');
-        const row = `<tr>
+function campaignRowHtml(c){
+      const counts = c.counts || {};
+      const preview = (c.text||'').length>60 ? esc(c.text.slice(0,60))+'…' : esc(c.text||'');
+  return `<tr>
           <td><b>${esc(c.name)}</b></td>
           <td style="max-width:240px;white-space:normal;font-size:12.5px;color:var(--ink-soft);">${preview}</td>
           <td class="num">${c.totalRecipients}</td>
@@ -2713,12 +2842,14 @@ function renderMessagesCampaignsList(){
           <td>${fmtDate(c.createdAt)}</td>
           <td><button class="btn ghost sm" onclick="toggleMessageCampaignDetail('${c.id}')">${messagesExpandedCampaignId===c.id ? 'إخفاء' : 'التفاصيل'}</button></td>
         </tr>`;
-        if(messagesExpandedCampaignId !== c.id) return row;
-        const detail = messagesCampaignDetailCache[c.id];
-        if(!detail || !detail.recipients){
-          return row + `<tr><td colspan="9" style="color:var(--ink-soft);padding:14px;">جارِ التحميل...</td></tr>`;
-        }
-        return row + `<tr><td colspan="9" style="background:var(--accent-tint);padding:14px;">
+}
+function campaignExpandedHtml(c){
+  if(messagesExpandedCampaignId !== c.id) return '';
+      const detail = messagesCampaignDetailCache[c.id];
+  if(!detail?.recipients){
+    return `<tr><td colspan="9" style="color:var(--ink-soft);padding:14px;">جارِ التحميل...</td></tr>`;
+  }
+  return `<tr><td colspan="9" style="background:var(--accent-tint);padding:14px;">
           <div style="font-weight:800;margin-bottom:8px;">نص الرسالة الكامل:</div>
           <div style="margin-bottom:12px;white-space:pre-wrap;">${esc(c.text)}</div>
           <div class="table-wrap">
@@ -2735,7 +2866,17 @@ function renderMessagesCampaignsList(){
             </table>
           </div>
         </td></tr>`;
-      }).join('')}
+}
+
+function renderMessagesCampaignsList(){
+  const list = messagesCampaignsCache || [];
+  if(list.length===0) return `<div class="empty-state"><div class="ic">📨</div><div class="t">ما في حملات مُرسلة بعد</div></div>`;
+  return `
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>الحملة</th><th>نص الرسالة</th><th class="num">المستلمون</th><th class="num">⏳ جارٍ</th><th class="num">🟢 تسليم</th><th class="num">📤 إرسال</th><th class="num">✕ فشل</th><th>التاريخ</th><th></th></tr></thead>
+      <tbody>
+      ${list.map(c => campaignRowHtml(c) + campaignExpandedHtml(c)).join('')}
       </tbody>
     </table>
   </div>`;
@@ -2762,23 +2903,14 @@ function renderMessagesLastResultInner(){
   </div>`;
 }
 
-function tabMessages(){
-  if(pharmacistsCache===null || messagesCampaignsCache===null){
-    return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
-  }
-
-  const matchedCount = computeMessageMatchedList().length;
-
-  const filtersDisabled = messagesState.allPharmacists;
-
-  let confirmBox = '';
-  if(messagesPendingSend){
-    const p = messagesPendingSend;
-    const summary = `
-    <div>رح ترسل الرسالة التالية لـ <b>${p.count}</b> صيدلية:</div>
-    <div style="white-space:pre-wrap;background:#fff;border-radius:8px;padding:10px;margin:8px 0;font-size:13.5px;">${esc(p.text)}</div>`;
-    if(p.stage === 'review'){
-      confirmBox = `
+function messagesCityOptionsHtml(filtersDisabled){
+  return JORDAN_CITIES.map(c=>`
+        <label style="display:flex;align-items:center;gap:6px;background:${messagesState.cities.includes(c)?'var(--primary-tint)':'#F4F5F7'};padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" style="width:auto;margin:0;" ${messagesState.cities.includes(c)?'checked':''} ${filtersDisabled?'disabled':''} onchange="toggleMessageCity('${c}')"> ${c}
+        </label>`).join('');
+}
+function messagesReviewStageHtml(summary){
+  return `
       <div style="background:var(--accent-tint);border-radius:12px;padding:14px;margin-top:14px;">
         <div style="font-weight:800;margin-bottom:8px;">مراجعة قبل الإرسال — الخطوة ١ من ٢</div>
         ${summary}
@@ -2788,10 +2920,11 @@ function tabMessages(){
           <button class="btn ghost sm" ${messagesSending?'disabled':''} onclick="cancelMessageSend()">رجوع للتعديل</button>
         </div>
       </div>`;
-    } else {
-      const expired = Date.now() > p.expiresAtMs;
-      const untilTxt = new Date(p.expiresAtMs).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-      confirmBox = `
+}
+function messagesApprovalStageHtml(p, summary){
+  const expired = Date.now() > p.expiresAtMs;
+  const untilTxt = new Date(p.expiresAtMs).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  return `
       <div style="background:var(--accent-tint);border-radius:12px;padding:14px;margin-top:14px;">
         <div style="font-weight:800;margin-bottom:8px;">أدخل رمز الاعتماد — الخطوة ٢ من ٢</div>
         ${summary}
@@ -2808,8 +2941,24 @@ function tabMessages(){
           <button class="btn ghost sm" ${messagesSending?'disabled':''} onclick="cancelMessageSend()">رجوع للتعديل</button>
         </div>
       </div>`;
-    }
+}
+function messagesConfirmBoxHtml(){
+  const p = messagesPendingSend;
+  if(!p) return '';
+  const summary = `
+  <div>رح ترسل الرسالة التالية لـ <b>${p.count}</b> صيدلية:</div>
+  <div style="white-space:pre-wrap;background:#fff;border-radius:8px;padding:10px;margin:8px 0;font-size:13.5px;">${esc(p.text)}</div>`;
+  return p.stage === 'review' ? messagesReviewStageHtml(summary) : messagesApprovalStageHtml(p, summary);
+}
+
+function tabMessages(){
+  if(pharmacistsCache===null || messagesCampaignsCache===null){
+    return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
+
+  const matchedCount = computeMessageMatchedList().length;
+
+  const filtersDisabled = messagesState.allPharmacists;
 
   return `
   <div class="section-title">رسائل جماعية (SMS)</div>
@@ -2823,10 +2972,7 @@ function tabMessages(){
     <div class="field">
       <label>المناطق (اختياري، تقدر تحدد أكثر من منطقة — تندمج مع تحديد الصيدليات تحت)</label>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${JORDAN_CITIES.map(c=>`
-        <label style="display:flex;align-items:center;gap:6px;background:${messagesState.cities.includes(c)?'var(--primary-tint)':'#F4F5F7'};padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer;">
-          <input type="checkbox" style="width:auto;margin:0;" ${messagesState.cities.includes(c)?'checked':''} ${filtersDisabled?'disabled':''} onchange="toggleMessageCity('${c}')"> ${c}
-        </label>`).join('')}
+        ${messagesCityOptionsHtml(filtersDisabled)}
       </div>
     </div>
 
@@ -2862,7 +3008,7 @@ function tabMessages(){
     </div>
 
     ${!messagesPendingSend ? `<button class="btn" onclick="startMessageSend()">إرسال الرسالة</button>` : ''}
-    ${confirmBox}
+    ${messagesConfirmBoxHtml()}
     <div id="msgLastResultBox">${renderMessagesLastResultInner()}</div>
   </div>
 
@@ -2960,9 +3106,9 @@ function cancelEditCategory(){
 
 async function saveEditCategory(id){
   const name = document.getElementById('editCatName_'+id).value.trim();
-  const price = parseFloat(document.getElementById('editCatPrice_'+id).value);
+  const price = Number.parseFloat(document.getElementById('editCatPrice_'+id).value);
   if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
-  if(isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
+  if(Number.isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
 
   const dep = currentDepartmentParam();
   try{
@@ -2976,9 +3122,9 @@ async function saveEditCategory(id){
 
 async function addCategory(){
   const name = document.getElementById('newCatName').value.trim();
-  const price = parseFloat(document.getElementById('newCatPrice').value);
+  const price = Number.parseFloat(document.getElementById('newCatPrice').value);
   if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
-  if(isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
+  if(Number.isNaN(price) || price <= 0){ toast('الرجاء إدخال قيمة عمولة صحيحة', 'danger'); return; }
 
   const dep = currentDepartmentParam();
   try{
@@ -3062,9 +3208,9 @@ function renderCompensationItemsMgmt(type){
 
 async function addCompensationItem(type){
   const name = document.getElementById('newCompItemName_'+type).value.trim();
-  const price = parseFloat(document.getElementById('newCompItemPrice_'+type).value);
+  const price = Number.parseFloat(document.getElementById('newCompItemPrice_'+type).value);
   if(!name){ toast('الرجاء إدخال اسم الصنف', 'danger'); return; }
-  if(isNaN(price) || price <= 0){ toast('الرجاء إدخال سعر صحيح', 'danger'); return; }
+  if(Number.isNaN(price) || price <= 0){ toast('الرجاء إدخال سعر صحيح', 'danger'); return; }
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
   try{
@@ -3262,7 +3408,7 @@ function printPharmacistsPDF(){
 </body>
 </html>`;
 
-  const w = window.open('', '_blank');
+  const w = globalThis.open('', '_blank');
   if(!w){ toast('الرجاء السماح بالنوافذ المنبثقة (Popups) لهذا الموقع', 'danger'); return; }
   w.document.open();
   w.document.write(html);
@@ -3413,7 +3559,7 @@ async function confirmPayout(pharmacistId){
     toast(e.message, 'danger');
     if(e.code === 'AMOUNT_CHANGED'){
       confirmingPayoutId = null;
-      try{ await loadPayouts(); render(); }catch(_e){}
+      try{ await loadPayouts(); render(); }catch(_e){ /* فشل تحديث القائمة — رسالة الخطأ الأصلية انعرضت فوق */ }
     }
   }
 }
@@ -3500,15 +3646,29 @@ async function clearPayoutsHistoryFilter(){
 }
 
 /* -------------------- تبويب: مستحقات الإحالة (تأكيد التحويل + سجل تاريخي) -------------------- */
-function tabReferralAdmin(){
-  const rows = referralAdminData || [];
-  const totalDue = rows.reduce((sum,r)=>sum+r.totalAmount, 0);
-
+function referralDueRowHtml(r){
+      const hasPayoutInfo = !!(r.payoutType && r.payoutValue);
+  return `<tr>
+          <td><b>${esc(r.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(r.pharmacyName)} · <span class="num">${esc(r.phoneNumber)}</span></div></td>
+          <td class="num">${r.rewardsCount}</td>
+          <td class="num"><b>${fmtMoney(r.totalAmount)}</b></td>
+          <td>${hasPayoutInfo ? `${payoutTypeLabel(r.payoutType)} · <span class="num">${esc(r.payoutValue)}</span>` : `<span style="color:var(--danger);">لم يُدخل بعد</span>`}</td>
+          <td>${hasPayoutInfo ? `<button class="btn sm" onclick="startConfirmReferral('${r.pharmacistId}')">تأكيد التحويل</button>` : '—'}</td>
+        </tr>`;
+}
+function referralConfirmRowHtml(r){
+  if(confirmingReferralId !== r.pharmacistId) return '';
+  return `<tr><td colspan="5" style="background:var(--accent-tint);padding:14px;">
+          <div style="margin-bottom:10px;">رح تؤكد تحويل <b>${fmtMoney(r.totalAmount)} د.أ</b> (${r.rewardsCount} مكافأة) لـ <b>${esc(r.fullName)}</b> عبر ${payoutTypeLabel(r.payoutType)} - <span class="num">${esc(r.payoutValue)}</span>.</div>
+          <div class="field" style="margin-bottom:10px;max-width:280px;"><label>رقم عملية التحويل (اختياري)</label><input type="text" id="referralRefInput" placeholder="مثال: CLIQ-12345"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn approve sm" onclick="confirmReferralTransferUI('${r.pharmacistId}', ${r.totalAmount}, ${r.rewardsCount})">نعم، تم التحويل فعليًا</button>
+            <button class="btn ghost sm" onclick="cancelConfirmReferral()">إلغاء</button>
+          </div>
+        </td></tr>`;
+}
+function referralDueTableHtml(rows, totalDue){
   return `
-  <div class="section-title">مستحقات الإحالة</div>
-  <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 16px;line-height:1.7;">مكافآت الإحالة (دينار عن كل صيدلي محال فعّل حسابه) المستحقة حاليًا لكل صيدلي، مجمّعة حسب مين أحال. التأكيد يتحقق من المبلغ الحالي الفعلي وقت الضغط، فلو انضافت مكافأة جديدة أثناء انتظارك بيرفض ويطلب تحديث الصفحة.</p>
-
-  ${rows.length===0 ? `<div class="empty-state"><div class="ic">🤝</div><div class="t">لا يوجد مستحقات إحالة حاليًا</div></div>` : `
   <div class="stat-grid" style="margin-bottom:16px;">
     <div class="stat-card"><div class="v">${rows.length}</div><div class="l">صيدلي مستحق</div></div>
     <div class="stat-card"><div class="v">${fmtMoney(totalDue)}</div><div class="l">إجمالي المستحق (د.أ)</div></div>
@@ -3517,32 +3677,16 @@ function tabReferralAdmin(){
     <table class="data-table">
       <thead><tr><th>الصيدلاني / الصيدلية</th><th class="num">عدد الإحالات المفعّلة</th><th class="num">المبلغ المستحق (د.أ)</th><th>طريقة الاستلام</th><th></th></tr></thead>
       <tbody>
-      ${rows.map(r=>{
-        const hasPayoutInfo = !!(r.payoutType && r.payoutValue);
-        const row = `<tr>
-          <td><b>${esc(r.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(r.pharmacyName)} · <span class="num">${esc(r.phoneNumber)}</span></div></td>
-          <td class="num">${r.rewardsCount}</td>
-          <td class="num"><b>${fmtMoney(r.totalAmount)}</b></td>
-          <td>${hasPayoutInfo ? `${payoutTypeLabel(r.payoutType)} · <span class="num">${esc(r.payoutValue)}</span>` : `<span style="color:var(--danger);">لم يُدخل بعد</span>`}</td>
-          <td>${hasPayoutInfo ? `<button class="btn sm" onclick="startConfirmReferral('${r.pharmacistId}')">تأكيد التحويل</button>` : '—'}</td>
-        </tr>`;
-        if(confirmingReferralId !== r.pharmacistId) return row;
-        return row + `<tr><td colspan="5" style="background:var(--accent-tint);padding:14px;">
-          <div style="margin-bottom:10px;">رح تؤكد تحويل <b>${fmtMoney(r.totalAmount)} د.أ</b> (${r.rewardsCount} مكافأة) لـ <b>${esc(r.fullName)}</b> عبر ${payoutTypeLabel(r.payoutType)} - <span class="num">${esc(r.payoutValue)}</span>.</div>
-          <div class="field" style="margin-bottom:10px;max-width:280px;"><label>رقم عملية التحويل (اختياري)</label><input type="text" id="referralRefInput" placeholder="مثال: CLIQ-12345"></div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn approve sm" onclick="confirmReferralTransferUI('${r.pharmacistId}', ${r.totalAmount}, ${r.rewardsCount})">نعم، تم التحويل فعليًا</button>
-            <button class="btn ghost sm" onclick="cancelConfirmReferral()">إلغاء</button>
-          </div>
-        </td></tr>`;
-      }).join('')}
+      ${rows.map(r => referralDueRowHtml(r) + referralConfirmRowHtml(r)).join('')}
       </tbody>
     </table>
-  </div>`}
-
-  <div class="section-title" style="margin-top:26px;">سجل تحويلات الإحالة السابقة</div>
-  ${!referralHistoryData ? `<p style="color:var(--ink-soft);">جارِ التحميل...</p>` : (referralHistoryData.items.length===0 ? `
-  <div class="empty-state"><div class="ic">📜</div><div class="t">لا يوجد سجل بعد</div></div>` : `
+  </div>`;
+}
+function referralHistorySectionHtml(){
+  if(!referralHistoryData) return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  if(referralHistoryData.items.length===0) return `
+  <div class="empty-state"><div class="ic">📜</div><div class="t">لا يوجد سجل بعد</div></div>`;
+  return `
   <div class="table-wrap">
     <table class="data-table">
       <thead><tr><th>الصيدلاني / الصيدلية</th><th class="num">المبلغ (د.أ)</th><th class="num">عدد المكافآت</th><th>التاريخ</th><th>رقم العملية</th><th>حوّله</th></tr></thead>
@@ -3559,7 +3703,21 @@ function tabReferralAdmin(){
     </table>
   </div>
   <div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:10px;">${referralHistoryData.items.length} من ${referralHistoryData.pagination.total}</div>
-  `)}
+  `;
+}
+
+function tabReferralAdmin(){
+  const rows = referralAdminData || [];
+  const totalDue = rows.reduce((sum,r)=>sum+r.totalAmount, 0);
+
+  return `
+  <div class="section-title">مستحقات الإحالة</div>
+  <p style="color:var(--ink-soft);font-size:13px;margin:-6px 0 16px;line-height:1.7;">مكافآت الإحالة (دينار عن كل صيدلي محال فعّل حسابه) المستحقة حاليًا لكل صيدلي، مجمّعة حسب مين أحال. التأكيد يتحقق من المبلغ الحالي الفعلي وقت الضغط، فلو انضافت مكافأة جديدة أثناء انتظارك بيرفض ويطلب تحديث الصفحة.</p>
+
+  ${rows.length===0 ? `<div class="empty-state"><div class="ic">🤝</div><div class="t">لا يوجد مستحقات إحالة حاليًا</div></div>` : referralDueTableHtml(rows, totalDue)}
+
+  <div class="section-title" style="margin-top:26px;">سجل تحويلات الإحالة السابقة</div>
+  ${referralHistorySectionHtml()}
   `;
 }
 
@@ -3587,7 +3745,7 @@ async function confirmReferralTransferUI(pharmacistId, expectedAmount, expectedR
       confirmingReferralId = null;
       referralAdminData = null;
       render();
-      try{ await loadReferralAdmin(); render(); }catch(_e){}
+      try{ await loadReferralAdmin(); render(); }catch(_e){ /* فشل تحديث القائمة — رسالة الخطأ الأصلية انعرضت فوق */ }
     } else {
       toast(e.message, 'danger');
     }
@@ -3632,7 +3790,7 @@ function pharmacistFilterState(ns){
 }
 function pharmacistComboField(ns, opts){
   const f = pharmacistFilterState(ns);
-  const label = (opts && opts.label) || 'الصيدلية';
+  const label = opts?.label || 'الصيدلية';
   return `
   <div class="field">
     <label>${esc(label)}</label>
@@ -3707,7 +3865,7 @@ async function runRegionFilter(){
       apiRequest('/users/pharmacists')
     ]);
     const cityById = {};
-    pharmRes.data.forEach(p=>{ cityById[p.id] = p.city; });
+    for(const p of pharmRes.data){ cityById[p.id] = p.city; }
     const fromD = adminFilter.fromDate, toD = adminFilter.toDate;
     reportsRows = salesRes.data.items.filter(s=>{
       const saleDay = toDateInputValue(s.saleDate);
@@ -3811,7 +3969,7 @@ async function runCompReportFilter(type){
     ]);
     pharmacistsCache = pharmRes.data;
     const cityById = {};
-    pharmacistsCache.forEach(p=>{ cityById[p.id] = p.city; });
+    for(const p of pharmacistsCache){ cityById[p.id] = p.city; }
     const fromD = f.fromDate, toD = f.toDate;
     compReportsRows[type] = salesRes.data.items.filter(s=>{
       const saleDay = toDateInputValue(s.saleDate);
@@ -3885,15 +4043,15 @@ function exportCompDetailedExcel(type){
 
 function computeFreeItemsByPharmacy(rows){
   const byPharm = {};
-  rows.forEach(s=>{
-    if(!s.freeCompensationItem) return;
+  for(const s of rows){
+    if(!s.freeCompensationItem) continue;
     const pid = s.pharmacistId;
     const pname = s.pharmacist ? s.pharmacist.pharmacyName : 'غير معروف';
     if(!byPharm[pid]) byPharm[pid] = { pharmacyName: pname, items: {}, total: 0 };
     const iname = s.freeCompensationItem.name;
     byPharm[pid].items[iname] = (byPharm[pid].items[iname]||0) + 1;
     byPharm[pid].total += 1;
-  });
+  }
   return Object.values(byPharm)
     .map(p=>({
       pharmacyName: p.pharmacyName,
@@ -3951,7 +4109,7 @@ ${pagesHtml}
 </body>
 </html>`;
 
-  const w = window.open('', '_blank');
+  const w = globalThis.open('', '_blank');
   if(!w){ toast('الرجاء السماح بالنوافذ المنبثقة (Popups) لهذا الموقع', 'danger'); return; }
   w.document.open();
   w.document.write(html);
@@ -4031,7 +4189,7 @@ function printReportsPDF(){
 </body>
 </html>`;
 
-  const w = window.open('', '_blank');
+  const w = globalThis.open('', '_blank');
   if(!w){ toast('الرجاء السماح بالنوافذ المنبثقة (Popups) لهذا الموقع', 'danger'); return; }
   w.document.open();
   w.document.write(html);
@@ -4041,10 +4199,10 @@ function printReportsPDF(){
 /* ---------------- init ---------------- */
 (async function init(){
   try{
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     const ref = params.get('ref');
     if(ref && /^[A-Za-z0-9]{4,12}$/.test(ref.trim())) incomingReferralCode = ref.trim().toUpperCase();
-  }catch(e){}
+  }catch(e){ /* رابط غير صالح — نكمل بدون كود إحالة */ }
 
   document.getElementById('app').innerHTML = `<div class="center-wrap"><div style="color:var(--ink-soft);">جارِ التحميل...</div></div>`;
   // ما في طريقة لجافاسكربت يعرف مسبقًا إذا في كوكي جلسة صالحة (httpOnly) — فبنحاول
