@@ -1566,7 +1566,8 @@ function tabAdd(){
       </div>
       <div style="margin-top:12px;font-size:12.5px;color:var(--ink-soft);line-height:1.7;">لا يمكن تعديل العملية أو حذفها بعد الإرسال. لو في خطأ، سيتم رفضها من الإدارة وتقدر ترسل عملية جديدة.</div>
     </div>
-    <button class="btn" onclick="finalizeSale()">تسجيل عملية بيع جديدة</button>`;
+    <button class="btn" onclick="finalizeSale()">تسجيل عملية بيع جديدة</button>
+    <button class="btn ghost" style="margin-top:10px;" onclick="goToHistoryAfterSale()">📜 مراجعة سجل المبيعات</button>`;
   }
 
   const cat = CATEGORIES.find(c=>c.id===addFlow.categoryId);
@@ -1622,7 +1623,8 @@ function tabAddCompensation(){
         <div style="display:flex;justify-content:space-between;"><span>تاريخ البيع</span><b style="color:var(--ink);">${fmtDate(s.saleDate)}</b></div>
       </div>
     </div>
-    <button class="btn" onclick="finalizeSale()">تسجيل عملية جديدة</button>`;
+    <button class="btn" onclick="finalizeSale()">تسجيل عملية جديدة</button>
+    <button class="btn ghost" style="margin-top:10px;" onclick="goToHistoryAfterSale()">📜 مراجعة سجل المبيعات</button>`;
   }
 
   if(items.length===0){
@@ -1808,6 +1810,17 @@ async function saveInvoiceAndFinish(){
 function finalizeSale(){
   resetAddFlow();
   render();
+}
+
+// من شاشة "تم إرسال العملية": ينقل الصيدلي لتبويب السجل مباشرة، وبيفتح الفلتر المناسب
+// لنوع العملية اللي لسا مسجّلها (عادية / تعويض الأصيل / تعويض زاروزا) عشان يشوفها فورًا.
+// (قسم الأدوية دايمًا "عادية" وبتنضبط تلقائيًا بـ switchTab.)
+function goToHistoryAfterSale(){
+  const type = (lastSubmittedSale && lastSubmittedSale.saleType) || saleMode || 'NORMAL';
+  historyFilterType = (type==='ASIL' || type==='ZAROZA') ? type : 'NORMAL';
+  historyStatusFilter = 'ALL';
+  showFreeItemsSummary = false;
+  switchTab('history');
 }
 
 function saleItemLabel(s){
