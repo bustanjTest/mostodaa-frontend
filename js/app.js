@@ -19,9 +19,74 @@
 /* ---------------- إعدادات ---------------- */
 const API_BASE = (globalThis.MOSTODAA_API_BASE || 'https://mostodaa-backend-3d1m.onrender.com/api');
 
-const JORDAN_CITIES = ['عمّان','إربد','الزرقاء','البلقاء (السلط)','المفرق','الكرك','معان','الطفيلة','مأدبا','جرش','عجلون','العقبة'];
+const JORDAN_CITIES = ['عمّان','إربد','الزرقاء','البلقاء (السلط)','المفرق','الكرك','معان','الطفيلة','مأدبا','جرش','عجلون','العقبة','الرمثا','الأغوار'];
+// المناطق الفرعية لكل مدينة — مصدرها ملف Excel الخاص بالشركة (عمود Address) بعد تنظيف التكرار والإملاء.
+// القيمة المختارة بتنخزّن بحقل region (نص حر بالباك-إند)، فما في تغيير بالـ API.
+const JORDAN_AREAS = Object.freeze({
+  'عمّان': ['ابونصير - شفا بدران', 'البقعه عين الباشا', 'البيادر وادي السير', 'الرابيه ام اذينه و ادي صقره', 'الشميساني', 'العبدلي - جبل اللويبده', 'المقابلين البنيات', 'الهاشمي', 'الوحدات الزهور جبل النظيف', 'اليادودة - الطيبة-خريبة السوق -جاوا', 'بدر الجديدة', 'جبل التاج الجوفة الاشرفية', 'جبل الحسين - مخيم الحسين', 'جبل النزهه - ضاحية الامير حسن - القصور', 'جبل عمان 1-4', 'جبل عمان 5-7', 'جبيهه - ضاحية الرشيد - شارع الجامعه', 'خلدا - تلاع العلي - ام السماق - دابوق', 'دير غبار', 'سحاب الموقر', 'صويلح الكماليه', 'طبربور المدينة الرياضية', 'عبدون دير غبار', 'قويسمه-ابوعلندا', 'ماركا الجنوبية', 'ماركا الشمالية', 'مرج الحمام ناعور', 'نزال -الياسمين - الجبل الاخضر- راس العين', 'نصر مناره ام نواره', 'وسط البلد'],
+  'إربد': ['الحي الشرقي', 'الوسط التجاري', 'ايدون', 'حواره', 'لواء الوسطيه-الكوره', 'لواء بني كنانه', 'مخيم اربد - الحي الشمالي', 'مخيم الحصن-الحصن'],
+  'الزرقاء': ['الاوتوستراد-وادي الحجر', 'الجبل الابيض-رحمه', 'الرصيفه - شنلر', 'الزرقاء - وادي الحجر', 'الزرقاء الجديده', 'الزرقاء ضواحي', 'الزرقاء-الوسط التجاري', 'السخنه-الهاشميه', 'الضليل - الخالديه', 'الغويريه-الاسكان', 'بلعما', 'حي معصوم', 'ياجوز'],
+  'البلقاء (السلط)': ['السلط', 'السلط الفحيص ماحص'],
+  'المفرق': ['المفرق'],
+  'الكرك': ['الكرك'],
+  'معان': ['البتراء - وادي موسى', 'الشوبك', 'معان'],
+  'الطفيلة': ['الحسا', 'الطفيله'],
+  'مأدبا': ['ذيبان', 'مادبا زيزيا'],
+  'جرش': ['جرش'],
+  'عجلون': ['عجلون'],
+  'العقبة': ['العقبه'],
+  'الرمثا': ['الرمثا'],
+  'الأغوار': ['الاغوار الشمالية', 'الاغوار الوسطى'],
+});
 const DEPARTMENTS = [ { value:'MEDICINE', label:'الأدوية', icon:'💊' }, { value:'COSMETICS', label:'الكوزمتك', icon:'💄' } ];
 function deptLabel(dep){ const d = DEPARTMENTS.find(x=>x.value===dep); return d ? d.label : dep; }
+
+function areasForCity(city){
+  return Object.hasOwn(JORDAN_AREAS, city) ? JORDAN_AREAS[city] : [];
+}
+// خيارات المنطقة الفرعية بالفلاتر: القائمة الثابتة + أي منطقة قديمة (مكتوبة يدويًا) مسجّلة لصيادلة بنفس المدينة،
+// عشان الصيادلة المسجّلين قبل هالتعديل ما يختفوا من الفلتر.
+function regionChoices(city){
+  const list = [...areasForCity(city)];
+  for(const u of (pharmacistsCache||[])){
+    if(u.city===city && u.region && !list.includes(u.region)) list.push(u.region);
+  }
+  return list;
+}
+function regionOptionsHtml(city, selected, placeholder){
+  const opts = regionChoices(city).map(r => '<option value="' + esc(r) + '"' + (r===selected ? ' selected' : '') + '>' + esc(r) + '</option>');
+  return '<option value="">' + esc(placeholder) + '</option>' + opts.join('');
+}
+// تعبئة قائمة المنطقة بعد تغيير المدينة بدون render() كامل (عشان ما نخسر باقي القيم المكتوبة بالنموذج) — عبر DOM APIs فقط
+function fillRegionSelect(sel, city, placeholder, required){
+  const choices = regionChoices(city);
+  const ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = placeholder;
+  if(required){ ph.disabled = true; ph.selected = true; }
+  const opts = choices.map(r => {
+    const o = document.createElement('option');
+    o.value = r;
+    o.textContent = r;
+    return o;
+  });
+  sel.replaceChildren(ph, ...opts);
+  sel.disabled = (city === '');
+  if(required && choices.length === 1){ sel.value = choices[0]; }
+}
+function onRegCityChange(regionSelectId, city){
+  const sel = document.getElementById(regionSelectId);
+  if(sel) fillRegionSelect(sel, city, 'اختر المنطقة', true);
+}
+function onCityFilterChange(regionSelectId, city){
+  const sel = document.getElementById(regionSelectId);
+  if(sel) fillRegionSelect(sel, city, 'كل المناطق الفرعية', false);
+}
+// نص الفلتر الحالي (للعناوين وأسماء الملفات): "عمّان - مرج الحمام ناعور" أو "عمّان" أو فاضي إذا ما في مدينة
+function cityRegionLabel(city, region){
+  if(!city) return '';
+  return region ? (city + ' - ' + region) : city;
+}
 
 /* ---------------- الحالة العامة ---------------- */
 // الجلسة محفوظة بكوكي httpOnly من السيرفر (مش localStorage) — جافاسكربت ما بيقدر
@@ -145,7 +210,7 @@ let referralSummaryCache = null;
 
 
 function defaultAdminFilter(){
-  return { city:'', pharmacistId:'', pharmacistName:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
+  return { city:'', region:'', pharmacistId:'', pharmacistName:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
 }
 let adminFilter = defaultAdminFilter();
 let adminFilterActive = false;
@@ -153,7 +218,7 @@ let reportsRows = [];
 
 // تقارير تعويض الأصيل/زاروزا (أدمن الكوزمتك فقط) — فلتر مستقل لكل نوع
 function defaultCompFilter(){
-  return { city:'', pharmacistId:'', pharmacistName:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
+  return { city:'', region:'', pharmacistId:'', pharmacistName:'', fromDate:toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), toDate:toLocalDateStr(new Date()) };
 }
 let compReportsFilter = { ASIL: defaultCompFilter(), ZAROZA: defaultCompFilter() };
 let compReportsRows = { ASIL: null, ZAROZA: null };
@@ -178,7 +243,7 @@ function isCosmeticsAdminContext(){
   return adminDeptFilter === 'COSMETICS';
 }
 
-let statsFilter = { city:'' };
+let statsFilter = { city:'', region:'' };
 let statsFilterActive = false;
 
 // الدفعات الشهرية (أدمن)
@@ -805,14 +870,16 @@ function screenReg2(){
       </div>
       <div class="field">
         <label>المدينة</label>
-        <select id="regCity">
+        <select id="regCity" data-change="onRegCityChange" data-change-pass="value" ${DA('change', 'regRegion')}>
           <option value="" disabled selected>اختر المدينة</option>
           ${JORDAN_CITIES.map(c=>`<option value="${c}">${c}</option>`).join('')}
         </select>
       </div>
       <div class="field">
         <label>المنطقة / الحي</label>
-        <input type="text" id="regRegion" placeholder="مثال: الجبيهة">
+        <select id="regRegion" disabled>
+          <option value="" disabled selected>اختر المدينة أولاً</option>
+        </select>
       </div>
       <div class="field">
         <label>كود الإحالة (اختياري)</label>
@@ -836,7 +903,7 @@ async function createAccount(){
   const password = document.getElementById('regPass').value;
   const pharmacyName = document.getElementById('regPharmacy').value.trim();
   const city = document.getElementById('regCity').value;
-  const region = document.getElementById('regRegion').value.trim();
+  const region = document.getElementById('regRegion').value;
   const referralCodeInput = document.getElementById('regReferralCode');
   const referralCode = referralCodeInput ? referralCodeInput.value.trim() : '';
   const agreed = document.getElementById('agreeTerms').checked;
@@ -2939,10 +3006,15 @@ function tabPharmacists(){
   return `
   <div class="section-title">العملاء المسجلون حسب المنطقة</div>
   <div class="admin-section">
-    <select id="statsCity">
+    <select id="statsCity" data-change="onCityFilterChange" data-change-pass="value" ${DA('change', 'statsRegion')}>
       <option value="" ${statsFilter.city===''?'selected':''}>كل المناطق</option>
       ${JORDAN_CITIES.map(c=>`<option value="${c}" ${statsFilter.city===c?'selected':''}>${c}</option>`).join('')}
     </select>
+    <div class="field sx-37">
+      <select id="statsRegion" ${statsFilter.city===''?'disabled':''}>
+        ${regionOptionsHtml(statsFilter.city, statsFilter.region, 'كل المناطق الفرعية')}
+      </select>
+    </div>
     <button class="btn sx-37" data-click="runStatsFilter">عرض</button>
 
     ${statsFilterActive ? renderStatsResults() : ''}
@@ -2952,13 +3024,14 @@ function tabPharmacists(){
 
 function runStatsFilter(){
   statsFilter.city = document.getElementById('statsCity').value;
+  statsFilter.region = statsFilter.city === '' ? '' : document.getElementById('statsRegion').value;
   statsFilterActive = true;
   render();
 }
 
 function renderStatsResults(){
-  const list = (pharmacistsCache||[]).filter(u => statsFilter.city==='' || u.city===statsFilter.city);
-  const label = statsFilter.city || 'كل المناطق';
+  const list = statsFilteredList();
+  const label = cityRegionLabel(statsFilter.city, statsFilter.region) || 'كل المناطق';
 
   return `
   <div class="sx-119">
@@ -2998,7 +3071,8 @@ async function togglePharmacistActive(id, makeActive){
 
 /* -------------------- تصدير Excel/PDF للعملاء المسجلين (حسب فلتر المنطقة الحالي فقط) -------------------- */
 function statsFilteredList(){
-  return (pharmacistsCache||[]).filter(u => statsFilter.city==='' || u.city===statsFilter.city);
+  return (pharmacistsCache||[]).filter(u => (statsFilter.city==='' || u.city===statsFilter.city)
+    && (statsFilter.region==='' || u.region===statsFilter.region));
 }
 function exportPharmacistsToExcel(){
   const list = statsFilteredList();
@@ -3016,14 +3090,14 @@ function exportPharmacistsToExcel(){
   ws['!cols'] = [{wch:5},{wch:20},{wch:14},{wch:22},{wch:14},{wch:16},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'العملاء المسجلون');
-  const label = statsFilter.city || 'كل-المناطق';
+  const label = cityRegionLabel(statsFilter.city, statsFilter.region) || 'كل-المناطق';
   XLSX.writeFile(wb, `العملاء-المسجلون-${label}-${toDateInputValue(new Date())}.xlsx`);
   toast('تم تصدير ملف Excel');
 }
 function printPharmacistsPDF(){
   const list = statsFilteredList();
   if(list.length===0){ toast('لا يوجد عملاء لتصديرهم', 'danger'); return; }
-  const label = statsFilter.city || 'كل المناطق';
+  const label = cityRegionLabel(statsFilter.city, statsFilter.region) || 'كل المناطق';
   const rowsHtml = list.map((u,i)=>`<tr>
     <td>${i+1}</td><td>${esc(u.fullName)}</td><td>${esc(u.phoneNumber)}</td><td>${esc(u.pharmacyName)}</td>
     <td>${esc(u.city||'')}</td><td>${esc(u.region||'')}</td><td>${u.isActive?'مفعّل':'موقوف'}</td>
@@ -3408,10 +3482,16 @@ function tabReports(){
     <div class="section-title">العمولات المؤكدة حسب المنطقة والمدى الزمني</div>
     ${pharmacistComboField('admin', {label:'اسم الصيدلية'})}
     <div class="field">
-      <label>المنطقة</label>
-      <select id="filterCity">
+      <label>المدينة</label>
+      <select id="filterCity" data-change="onCityFilterChange" data-change-pass="value" ${DA('change', 'filterRegion')}>
         <option value="" ${adminFilter.city===''?'selected':''}>كل المناطق</option>
         ${JORDAN_CITIES.map(c=>`<option value="${c}" ${adminFilter.city===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>المنطقة الفرعية</label>
+      <select id="filterRegion" ${adminFilter.city===''?'disabled':''}>
+        ${regionOptionsHtml(adminFilter.city, adminFilter.region, 'كل المناطق الفرعية')}
       </select>
     </div>
     <div class="row2">
@@ -3503,6 +3583,7 @@ function clearPharmacistCombo(ns){
 
 async function runRegionFilter(){
   adminFilter.city = document.getElementById('filterCity').value;
+  adminFilter.region = adminFilter.city === '' ? '' : document.getElementById('filterRegion').value;
   adminFilter.fromDate = document.getElementById('filterFromDate').value;
   adminFilter.toDate = document.getElementById('filterToDate').value;
   const dep = currentDepartmentParam();
@@ -3513,13 +3594,15 @@ async function runRegionFilter(){
       apiRequest('/users/pharmacists')
     ]);
     const cityById = {};
-    for(const p of pharmRes.data){ cityById[p.id] = p.city; }
+    const regionById = {};
+    for(const p of pharmRes.data){ cityById[p.id] = p.city; regionById[p.id] = p.region; }
     const fromD = adminFilter.fromDate, toD = adminFilter.toDate;
     reportsRows = salesRes.data.items.filter(s=>{
       const saleDay = toDateInputValue(s.saleDate);
       if(saleDay < fromD || saleDay > toD) return false;
       const city = cityById[s.pharmacistId];
       if(adminFilter.city !== '' && city !== adminFilter.city) return false;
+      if(adminFilter.region !== '' && regionById[s.pharmacistId] !== adminFilter.region) return false;
       if(adminFilter.pharmacistId !== '' && s.pharmacistId !== adminFilter.pharmacistId) return false;
       return true;
     }).map(s=> ({...s, _city: cityById[s.pharmacistId] || ''}))
@@ -3533,7 +3616,7 @@ function renderRegionFilterResults(){
   const approvedResults = reportsRows;
   const total = approvedResults.reduce((a,s)=>a+Number(s.commissionAmount),0);
   const distinctPharmacies = new Set(approvedResults.map(s=>s.pharmacistId)).size;
-  const label = adminFilter.pharmacistName || adminFilter.city || 'كل المناطق';
+  const label = adminFilter.pharmacistName || cityRegionLabel(adminFilter.city, adminFilter.region) || 'كل المناطق';
 
   return `
   <div class="sx-119">
@@ -3581,10 +3664,16 @@ function tabCompReports(type){
   <div class="admin-section">
     <div class="section-title">فواتير ${compReportTitle(type)} حسب المنطقة/الصيدلية والمدى الزمني</div>
     <div class="field">
-      <label>المنطقة</label>
-      <select id="compFilterCity_${type}">
+      <label>المدينة</label>
+      <select id="compFilterCity_${type}" data-change="onCityFilterChange" data-change-pass="value" ${DA('change', 'compFilterRegion_' + type)}>
         <option value="" ${f.city===''?'selected':''}>كل المناطق</option>
         ${JORDAN_CITIES.map(c=>`<option value="${c}" ${f.city===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>المنطقة الفرعية</label>
+      <select id="compFilterRegion_${type}" ${f.city===''?'disabled':''}>
+        ${regionOptionsHtml(f.city, f.region, 'كل المناطق الفرعية')}
       </select>
     </div>
     ${pharmacistComboField(type, {label:'الصيدلية'})}
@@ -3608,6 +3697,7 @@ function tabCompReports(type){
 async function runCompReportFilter(type){
   const f = compReportsFilter[type];
   f.city = document.getElementById('compFilterCity_'+type).value;
+  f.region = f.city === '' ? '' : document.getElementById('compFilterRegion_'+type).value;
   f.fromDate = document.getElementById('compFilterFromDate_'+type).value;
   f.toDate = document.getElementById('compFilterToDate_'+type).value;
   try{
@@ -3617,13 +3707,15 @@ async function runCompReportFilter(type){
     ]);
     pharmacistsCache = pharmRes.data;
     const cityById = {};
-    for(const p of pharmacistsCache){ cityById[p.id] = p.city; }
+    const regionById = {};
+    for(const p of pharmacistsCache){ cityById[p.id] = p.city; regionById[p.id] = p.region; }
     const fromD = f.fromDate, toD = f.toDate;
     compReportsRows[type] = salesRes.data.items.filter(s=>{
       const saleDay = toDateInputValue(s.saleDate);
       if(saleDay < fromD || saleDay > toD) return false;
       const city = cityById[s.pharmacistId];
       if(f.city !== '' && city !== f.city) return false;
+      if(f.region !== '' && regionById[s.pharmacistId] !== f.region) return false;
       if(f.pharmacistId !== '' && s.pharmacistId !== f.pharmacistId) return false;
       return true;
     }).map(s=> ({...s, _city: cityById[s.pharmacistId] || ''}))
@@ -3637,7 +3729,7 @@ function renderCompReportResults(type){
   const rows = compReportsRows[type] || [];
   const f = compReportsFilter[type];
   const distinctPharmacies = new Set(rows.map(s=>s.pharmacistId)).size;
-  const label = f.pharmacistName || f.city || 'كل المناطق';
+  const label = f.pharmacistName || cityRegionLabel(f.city, f.region) || 'كل المناطق';
 
   return `
   <div class="sx-119">
@@ -3772,7 +3864,7 @@ function exportReportsToExcel(){
   ws['!cols'] = [{wch:5},{wch:22},{wch:18},{wch:14},{wch:14},{wch:26},{wch:10},{wch:18},{wch:14},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'عمولات البيع');
-  const label = adminFilter.pharmacistName || adminFilter.city || 'الكل';
+  const label = adminFilter.pharmacistName || cityRegionLabel(adminFilter.city, adminFilter.region) || 'الكل';
   XLSX.writeFile(wb, `عمولات-البيع-${label}-${toDateInputValue(new Date())}.xlsx`);
   toast('تم تصدير ملف Excel');
 }
@@ -3780,7 +3872,7 @@ function exportReportsToExcel(){
 function printReportsPDF(){
   const rows = reportsRows || [];
   if(rows.length===0){ toast('لا توجد نتائج لتصديرها', 'danger'); return; }
-  const label = adminFilter.pharmacistName || adminFilter.city || 'كل المناطق';
+  const label = adminFilter.pharmacistName || cityRegionLabel(adminFilter.city, adminFilter.region) || 'كل المناطق';
   const total = rows.reduce((a,s)=>a+Number(s.commissionAmount),0);
   const rowsHtml = rows.map((s,i)=>{
     const p = s.pharmacist;
@@ -3873,10 +3965,12 @@ const ACTIONS = {
   goToHistoryAfterSale,
   goto,
   handleInvoiceFile,
+  onCityFilterChange,
   onMessagePharmacistSearch,
   onMessageTextInput,
   onPayoutTypeChange,
   onPayoutValueInput,
+  onRegCityChange,
   openCompareImageModal,
   openImageModal,
   openPharmacistCombo,
