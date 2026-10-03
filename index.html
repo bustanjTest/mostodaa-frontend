@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<!-- سياسة أمان المحتوى: تمنع الاتصال بأي سيرفر غير الـ API الخاص بنا (يحدّ من سرقة التووكن لو صار XSS).
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- سياسة أمان المحتوى: تمنع الاتصال بأي سيرفر غير الـ API الخاص بنا (يحدّ من سرقة التوكن لو صار XSS).
      'unsafe-inline' مطلوبة فعليًا بهاي البنية: الواجهة ملف واحد فيه سكربت inline ومعالجات onclick/onchange داخل القوالب
      وخصائص style="..." — إزالتها بتكسر التطبيق، وnonce/hash ما بيغطّي معالجات الأحداث inline. (راجعها كـ Security Hotspot → Safe بـ SonarCloud.)
      ملاحظة: لو غيّرت عنوان الـ API (دومين مخصص مثلاً) لازم تعدّل connect-src هون وعنوان API_BASE بالسكربت. -->
@@ -139,7 +139,7 @@
   .app-header-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .app-header .pharmacy{font-family:'Cairo',sans-serif;font-weight:800;font-size:17px;}
   .app-header .sub{font-size:12px;opacity:.85;margin-top:2px;}
-  .app-header .logout{background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:7px 12px;border-radius:9px;font-weight:700;}
+  .app-header .logout{background:#33756C;color:#fff;font-size:12px;padding:7px 12px;border-radius:9px;font-weight:700;}
   .app-header .logout:hover{background:rgba(255,255,255,.28);}
 
   .app-body{flex:1;padding:18px 16px 90px;max-width:520px;margin:0 auto;width:100%;}
@@ -221,7 +221,7 @@
   .pill.active{background:var(--primary);color:#fff;}
   .pill.sub{background:var(--surface);border-color:var(--border);color:var(--ink-soft);}
   .pill.sub.active.APPROVED{background:#1D7A4C;border-color:#1D7A4C;color:#fff;}
-  .pill.sub.active.PENDING{background:#B98617;border-color:#B98617;color:#fff;}
+  .pill.sub.active.PENDING{background:#96690F;border-color:#96690F;color:#fff;}
   .pill.sub.active.REJECTED{background:var(--danger);border-color:var(--danger);color:#fff;}
   .pill.sub.active.ALL{background:var(--ink);border-color:var(--ink);color:#fff;}
 
@@ -302,7 +302,7 @@
   .lb-row.me{border-color:var(--accent);background:var(--accent-tint);}
   .lb-rank{width:30px;height:30px;border-radius:50%;background:var(--primary-tint);color:var(--primary-dark);
     display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;font-weight:800;font-size:13px;flex:none;}
-  .lb-rank.gold{background:#F5D48A;color:#7A5A16;}
+  .lb-rank.gold{background:#F5D48A;color:#745414;}
   .lb-rank.silver{background:#DCE3E6;color:#4C5A5F;}
   .lb-rank.bronze{background:#E9C4A0;color:#6B4321;}
   .lb-name{flex:1;}
@@ -322,7 +322,7 @@
   .img-modal-actions a,.img-modal-actions button{padding:11px 20px;border-radius:11px;font-weight:700;font-size:13.5px;font-family:'Tajawal',sans-serif;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
   .img-modal-download{background:var(--accent);color:#3A2C08;}
   .img-modal-download:hover{background:#B78A2E;}
-  .img-modal-close{background:rgba(255,255,255,.16);color:#fff;}
+  .img-modal-close{background:#45514F;color:#fff;}
   .img-modal-close:hover{background:rgba(255,255,255,.28);}
   .view-invoice-btn{background:var(--primary-tint);color:var(--primary-dark);padding:6px 11px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;}
   .view-invoice-btn:hover{background:#D3E9E0;}
@@ -377,9 +377,7 @@
 </div>
 
 
-<!-- SRI: لازم يُضاف integrity="sha384-…" هون. احسبه من الملف الفعلي:
-     curl -s https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <script>
 /* =========================================================
    نظام عمولات مستودع مسروجي — واجهة متصلة بالباك-إند الحقيقي
@@ -598,6 +596,7 @@ async function apiRequest(path, { method='GET', json=null, form=null, auth=true 
     // بدونها الطلب بيروح بدون أي إثبات هوية حتى لو المستخدم مسجّل دخول فعليًا
     res = await fetch(API_BASE + path, { method, headers, body, credentials:'include' });
   }catch(e){
+    // فشل الاتصال نفسه (شبكة/CORS/سيرفر واقف): نص الخطأ التقني ما بيفيد المستخدم، فبنرمي رسالة عربية واضحة بدله
     showConnBanner(true);
     throw new Error('تعذر الاتصال بالسيرفر. تأكد من تشغيل الباك-إند وصحة عنوان API_BASE.');
   }
@@ -673,18 +672,26 @@ function fmtDate(d){
   try{
     const dt = d.length===10 ? new Date(d+'T00:00:00') : new Date(d);
     return dt.toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
-  }catch(e){ return d; }
+  }catch(e){ /* تاريخ بصيغة ما بنقدر نحوّلها: نعرض القيمة الأصلية بدل ما ينكسر الجدول */ return d; }
 }
 function toDateInputValue(d){
   if(!d) return '';
   return String(d).slice(0,10);
 }
 function statusBadgeHtml(s){
-  return s.status==='APPROVED' ? `<span class="badge ok">مقبولة</span>`
-    : s.status==='REJECTED' ? `<span class="badge rejected">مرفوضة</span>`
-    : `<span class="badge pending">قيد المراجعة</span>`;
+  if(s.status==='APPROVED') return `<span class="badge ok">مقبولة</span>`;
+  if(s.status==='REJECTED') return `<span class="badge rejected">مرفوضة</span>`;
+  return `<span class="badge pending">قيد المراجعة</span>`;
 }
-function payoutTypeLabel(t){ return t==='PHONE' ? 'رقم هاتف' : t==='ALIAS' ? 'اسم مستعار' : '—'; }
+function invoiceViewButtonHtml(s){
+  if(!s.invoiceImageUrl) return '—';
+  return `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>`;
+}
+function payoutTypeLabel(t){
+  if(t==='PHONE') return 'رقم هاتف';
+  if(t==='ALIAS') return 'اسم مستعار';
+  return '—';
+}
 
 function resizeImageToBlob(file){
   return new Promise((resolve, reject)=>{
@@ -745,7 +752,7 @@ bindModalBackdrop('imgModal', closeImageModal);
 bindModalBackdrop('compareImgModal', closeCompareImageModal);
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape') return;
-  if(!document.getElementById('compareImgModal').classList.contains('hidden')) closeCompareImageModal();
+  if(!document.getElementById('compareImgModal').classList.contains('hidden')) { closeCompareImageModal(); }
   if(!document.getElementById('imgModal').classList.contains('hidden')) closeImageModal();
 });
 
@@ -1023,7 +1030,7 @@ async function forgotVerifyOtp(){
   const code = document.getElementById('forgotCode').value.trim();
   if(!/^\d{6}$/.test(code)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
   const btn = document.getElementById('forgotVerifyBtn');
-  if(btn) btn.disabled = true;
+  if(btn) { btn.disabled = true; }
   try{
     const res = await apiRequest('/auth/pharmacist/forgot-password/verify-otp', { method:'POST', auth:false, json:{ phoneNumber: forgot.phone, code } });
     forgot.resetToken = res.data.resetToken;
@@ -1038,7 +1045,7 @@ async function forgotVerifyOtp(){
 async function forgotReset(){
   const p1 = document.getElementById('forgotNewPass').value;
   const p2 = document.getElementById('forgotNewPass2').value;
-  if(p1.length < 8 || !/[A-Za-z\u0621-\u064A]/.test(p1) || !/[0-9]/.test(p1)){ toast('كلمة المرور يجب أن تكون 8 أحرف على الأقل وفيها حرف ورقم', 'danger'); return; }
+  if(p1.length < 8 || !/[A-Za-z\u0621-\u064A]/.test(p1) || !/\d/.test(p1)){ toast('كلمة المرور يجب أن تكون 8 أحرف على الأقل وفيها حرف ورقم', 'danger'); return; }
   if(p1 !== p2){ toast('كلمتا المرور غير متطابقتين', 'danger'); return; }
   const btn = document.getElementById('forgotResetBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
@@ -1139,7 +1146,7 @@ async function verifyOtp(){
   const val = document.getElementById('otpInput').value.trim();
   if(!/^\d{6}$/.test(val)){ toast('رمز التحقق مكوّن من 6 أرقام', 'danger'); return; }
   const btn = document.getElementById('verifyOtpBtn');
-  if(btn) btn.disabled = true;
+  if(btn) { btn.disabled = true; }
   try{
     const res = await apiRequest('/auth/pharmacist/verify-otp', { method:'POST', auth:false, json:{ phoneNumber: pendingReg.phone, code: val } });
     verificationToken = res.data.verificationToken;
@@ -1211,7 +1218,7 @@ async function createAccount(){
   const referralCodeInput = document.getElementById('regReferralCode');
   const referralCode = referralCodeInput ? referralCodeInput.value.trim() : '';
   const agreed = document.getElementById('agreeTerms').checked;
-  if(password.length < 8 || !/[A-Za-z\u0621-\u064A]/.test(password) || !/[0-9]/.test(password)){ toast('كلمة المرور يجب أن تكون 8 أحرف على الأقل وفيها حرف ورقم', 'danger'); return; }
+  if(password.length < 8 || !/[A-Za-z\u0621-\u064A]/.test(password) || !/\d/.test(password)){ toast('كلمة المرور يجب أن تكون 8 أحرف على الأقل وفيها حرف ورقم', 'danger'); return; }
   if(!pharmacyName || !city || !region){ toast('الرجاء تعبئة جميع الحقول', 'danger'); return; }
   if(!agreed){ toast('الرجاء الموافقة على الشروط والأحكام وسياسة الخصوصية', 'danger'); return; }
   if(!verificationToken){ toast('الرجاء تأكيد رقم الهاتف أولاً', 'danger'); goto('reg1'); return; }
@@ -1387,7 +1394,7 @@ function adminRoleLabel(_u){
   return 'المدير';
 }
 
-const SHELL_WIDE_TABS = ['admin','messages','reports','users','stats','payouts','payoutsHistory','referralAdmin','account','compReportsAsil','compReportsZaroza'];
+const SHELL_WIDE_TABS = new Set(['admin','messages','reports','users','stats','payouts','payoutsHistory','referralAdmin','account','compReportsAsil','compReportsZaroza']);
 // [key, icon, label, cosmeticsAdminOnly]
 const SHELL_USER_TABS = [
   ['add','＋','إضافة'],
@@ -1471,7 +1478,7 @@ function renderActiveTab(tab){
 
 function screenAppShell(){
   const isAdmin = currentUser.type === 'admin';
-  const isWide = SHELL_WIDE_TABS.includes(activeTab);
+  const isWide = SHELL_WIDE_TABS.has(activeTab);
   const nameLine = esc(isAdmin ? currentUser.fullName : currentUser.pharmacyName);
   const subLine = isAdmin ? (adminRoleLabel(currentUser) + ' · لوحة التحكم') : (esc(currentUser.fullName) + ' · ' + esc(currentUser.city));
   return `
@@ -1576,9 +1583,12 @@ async function loadReferralSummary(){
   referralSummaryCache = res.data;
 }
 async function loadAdminSales(){
-  const qs = adminPharmacistFilter
-    ? ('&pharmacistId=' + adminPharmacistFilter)
-    : (currentDepartmentParam() ? ('&department=' + currentDepartmentParam()) : '');
+  let qs = '';
+  if(adminPharmacistFilter){
+    qs = '&pharmacistId=' + adminPharmacistFilter;
+  } else if(currentDepartmentParam()){
+    qs = '&department=' + currentDepartmentParam();
+  }
   const res = await apiRequest('/sales?pageSize=300' + qs);
   adminSalesCache = res.data.items;
 }
@@ -1605,7 +1615,7 @@ async function loadReferralHistory(){
 async function loadPayoutsHistory(){
   const params = new URLSearchParams();
   if(payoutsHistoryFilterActive){
-    if(payoutsHistoryFilter.city) params.set('city', payoutsHistoryFilter.city);
+    if(payoutsHistoryFilter.city) { params.set('city', payoutsHistoryFilter.city); }
     if(payoutsHistoryFilter.search) params.set('search', payoutsHistoryFilter.search);
   }
   const qs = params.toString() ? ('?' + params.toString()) : '';
@@ -1774,7 +1784,7 @@ function pickFreeItem(id){
     return;
   }
   addFlow.freeItemId = id;
-  if(!addFlow.date) addFlow.date = toLocalDateStr(new Date());
+  if(!addFlow.date) { addFlow.date = toLocalDateStr(new Date()); }
   pendingInvoiceFile=null; pendingInvoicePreview=null;
   render();
 }
@@ -1838,7 +1848,7 @@ function saveQty(){
   const v = Number.parseInt(document.getElementById('qtyInput').value, 10);
   if(!v || v < 1){ toast('الرجاء إدخال عدد قطع صحيح', 'danger'); return; }
   addFlow.qty = v;
-  if(!addFlow.date) addFlow.date = toLocalDateStr(new Date());
+  if(!addFlow.date) { addFlow.date = toLocalDateStr(new Date()); }
   render();
 }
 
@@ -1975,7 +1985,7 @@ function tabHistory(){
   if(mySalesCache===null){
     return `<div class="section-title">سجل المبيعات</div><p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
   }
-  if(selectedDepartment==='MEDICINE') historyFilterType = 'NORMAL';
+  if(selectedDepartment==='MEDICINE') { historyFilterType = 'NORMAL'; }
 
   const mySales = historyVisibleSales();
 
@@ -2219,7 +2229,7 @@ function tabPayoutInfo(){
     return payoutIntroHtml();
   }
 
-  if(!payoutDraft) payoutDraft = { type: savedType, value: savedValue };
+  if(!payoutDraft) { payoutDraft = { type: savedType, value: savedValue }; }
 
   // بعد أول مرة: الحقول تُعرض مقفولة (غير قابلة للتعديل) لحد ما يضغط "تعديل"
   // ويتحقق برمز يوصله على هاتفه المسجّل
@@ -2267,7 +2277,7 @@ function cancelPayoutEdit(){
 function checkPayoutEditedToday(){
   try{
     return localStorage.getItem('mm_payout_last_edit_date') === toLocalDateStr(new Date());
-  }catch(e){ return false; }
+  }catch(e){ /* التخزين المحلي ممنوع (وضع خاص/إعدادات المتصفح): نعتبر إنه ما عدّل اليوم */ return false; }
 }
 function markPayoutEditedToday(){
   try{ localStorage.setItem('mm_payout_last_edit_date', toLocalDateStr(new Date())); }catch(e){ /* التخزين المحلي غير متاح — التسجيل اختياري */ }
@@ -2278,7 +2288,7 @@ function onPayoutTypeChange(v){
   render();
 }
 function onPayoutValueInput(v){
-  if(!payoutDraft) payoutDraft = { type: currentUser.payoutType||'', value:'' };
+  if(!payoutDraft) { payoutDraft = { type: currentUser.payoutType||'', value:'' }; }
   payoutDraft.value = v;
 }
 
@@ -2302,7 +2312,7 @@ async function savePayoutInfo(){
     const wasLockedEdit = !!payoutEditCode;
     payoutDraft = null;
     payoutEditUnlocked = false; payoutEditOtpSent = false; payoutEditOtpDev = null; payoutEditCode = '';
-    if(wasLockedEdit) markPayoutEditedToday();
+    if(wasLockedEdit) { markPayoutEditedToday(); }
     toast('تم حفظ بيانات الاستلام بنجاح');
     render();
   }catch(e){
@@ -2653,7 +2663,7 @@ function computeMessageMatchedList(){
 
 function toggleMessageCity(city){
   const i = messagesState.cities.indexOf(city);
-  if(i>=0) messagesState.cities.splice(i,1); else messagesState.cities.push(city);
+  if(i>=0) { messagesState.cities.splice(i,1); } else { messagesState.cities.push(city); }
   render();
 }
 function toggleMessageAllPharmacists(){
@@ -2662,7 +2672,7 @@ function toggleMessageAllPharmacists(){
 }
 function toggleMessagePharmacist(id){
   const i = messagesState.pharmacistIds.indexOf(id);
-  if(i>=0) messagesState.pharmacistIds.splice(i,1); else messagesState.pharmacistIds.push(id);
+  if(i>=0) { messagesState.pharmacistIds.splice(i,1); } else { messagesState.pharmacistIds.push(id); }
   render();
 }
 function clearMessagePharmacists(){
@@ -2692,8 +2702,8 @@ function renderMessagePharmacistOptions(){
 function startMessageSend(){
   const textEl = document.getElementById('msgCampaignText');
   const nameEl = document.getElementById('msgCampaignName');
-  if(textEl) messagesDraft.text = textEl.value;
-  if(nameEl) messagesDraft.name = nameEl.value;
+  if(textEl) { messagesDraft.text = textEl.value; }
+  if(nameEl) { messagesDraft.name = nameEl.value; }
   const text = messagesDraft.text.trim();
   const name = messagesDraft.name.trim();
   if(text.length < 3){ toast('اكتب نص رسالة أطول قليلاً (٣ أحرف على الأقل)', 'danger'); return; }
@@ -2742,14 +2752,14 @@ async function confirmMessageSend(){
   if(!p || p.stage!=='code' || messagesSending) return;
   const codeEl = document.getElementById('msgApprovalCode');
   const code = codeEl ? codeEl.value.trim() : '';
-  if(!/^[0-9]{6}$/.test(code)){ toast('أدخل رمز الاعتماد المكوّن من ٦ أرقام', 'danger'); return; }
+  if(!/^\d{6}$/.test(code)){ toast('أدخل رمز الاعتماد المكوّن من ٦ أرقام', 'danger'); return; }
   messagesSending = true; render();
   try{
     const payload = {
       text: p.text, cities: p.cities, pharmacistIds: p.pharmacistIds, allPharmacists: p.allPharmacists,
       challengeToken: p.challengeToken, code,
     };
-    if(p.name) payload.name = p.name;
+    if(p.name) { payload.name = p.name; }
     const res = await apiRequest('/messages/campaigns', { method:'POST', json:payload });
     messagesLastResult = res.data;
     messagesCampaignDetailCache[res.data.id] = res.data;
@@ -2777,7 +2787,7 @@ function messageCampaignInProgress(c){
 }
 function refreshMessageProgressDom(){
   const box = document.getElementById('msgLastResultBox');
-  if(box) box.innerHTML = renderMessagesLastResultInner();
+  if(box) { box.innerHTML = renderMessagesLastResultInner(); }
   const hist = document.getElementById('msgHistoryWrap');
   if(hist) hist.innerHTML = renderMessagesCampaignsList();
 }
@@ -2791,9 +2801,9 @@ async function pollMessageCampaign(id){
       const res = await apiRequest('/messages/campaigns/'+id);
       const d = res.data;
       messagesCampaignDetailCache[id] = d;
-      if(messagesLastResult && messagesLastResult.id===id) messagesLastResult = d;
+      if(messagesLastResult?.id===id) { messagesLastResult = d; }
       const row = (messagesCampaignsCache||[]).find(x=>x.id===id);
-      if(row) row.counts = d.counts;
+      if(row) { row.counts = d.counts; }
       refreshMessageProgressDom();
       if(!messageCampaignInProgress(d)) break;
     }
@@ -3264,7 +3274,7 @@ async function submitAdminPasswordChange(){
   const n1 = document.getElementById('accNewPass').value;
   const n2 = document.getElementById('accNewPass2').value;
   if(!cur){ toast('أدخل كلمة السر الحالية', 'danger'); return; }
-  if(n1.length < 10 || !/[A-Za-z]/.test(n1) || !/[0-9]/.test(n1)){ toast('كلمة السر الجديدة: 10 أحرف على الأقل وفيها حرف إنجليزي ورقم', 'danger'); return; }
+  if(n1.length < 10 || !/[A-Za-z]/.test(n1) || !/\d/.test(n1)){ toast('كلمة السر الجديدة: 10 أحرف على الأقل وفيها حرف إنجليزي ورقم', 'danger'); return; }
   if(n1 !== n2){ toast('كلمتا السر غير متطابقتين', 'danger'); return; }
   const btn = document.getElementById('accSaveBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'جارِ الحفظ...'; }
@@ -3588,6 +3598,30 @@ function exportPayoutsToExcel(){
 }
 
 /* -------------------- تبويب: الدفعات الشهرية السابقة (سجل التحويلات) -------------------- */
+function payoutsHistorySectionHtml(d){
+  if(!d) return `<p style="color:var(--ink-soft);">جارِ التحميل...</p>`;
+  if(d.items.length===0) return `
+  <div class="empty-state"><div class="ic">📜</div><div class="t">لا يوجد سجل مطابق</div></div>`;
+  return `
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>الصيدلاني / الصيدلية</th><th>المنطقة</th><th class="num">المبلغ (د.أ)</th><th>التاريخ</th><th>رقم العملية</th><th>حوّله</th></tr></thead>
+      <tbody>
+      ${d.items.map(p=>`<tr>
+        <td><b>${esc(p.pharmacist.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(p.pharmacist.pharmacyName)} · <span class="num">${esc(p.pharmacist.phoneNumber)}</span></div></td>
+        <td>${esc(p.pharmacist.city)}</td>
+        <td class="num"><b>${fmtMoney(p.amount)}</b><div style="font-size:11.5px;color:var(--ink-soft);">${p.salesCount} عملية</div></td>
+        <td>${fmtDate(p.paidAt)}</td>
+        <td class="num">${p.reference ? esc(p.reference) : '—'}</td>
+        <td>${esc(p.paidBy.fullName)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:10px;">${d.items.length} من ${d.pagination.total}</div>
+  `;
+}
+
 function tabPayoutsHistory(){
   const d = payoutsHistoryData;
   return `
@@ -3605,25 +3639,7 @@ function tabPayoutsHistory(){
     </div>
   </div>
 
-  ${!d ? `<p style="color:var(--ink-soft);">جارِ التحميل...</p>` : (d.items.length===0 ? `
-  <div class="empty-state"><div class="ic">📜</div><div class="t">لا يوجد سجل مطابق</div></div>` : `
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead><tr><th>الصيدلاني / الصيدلية</th><th>المنطقة</th><th class="num">المبلغ (د.أ)</th><th>التاريخ</th><th>رقم العملية</th><th>حوّله</th></tr></thead>
-      <tbody>
-      ${d.items.map(p=>`<tr>
-        <td><b>${esc(p.pharmacist.fullName)}</b><div style="font-size:12px;color:var(--ink-soft);">${esc(p.pharmacist.pharmacyName)} · <span class="num">${esc(p.pharmacist.phoneNumber)}</span></div></td>
-        <td>${esc(p.pharmacist.city)}</td>
-        <td class="num"><b>${fmtMoney(p.amount)}</b><div style="font-size:11.5px;color:var(--ink-soft);">${p.salesCount} عملية</div></td>
-        <td>${fmtDate(p.paidAt)}</td>
-        <td class="num">${p.reference ? esc(p.reference) : '—'}</td>
-        <td>${esc(p.paidBy.fullName)}</td>
-      </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>
-  <div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:10px;">${d.items.length} من ${d.pagination.total}</div>
-  `)}
+  ${payoutsHistorySectionHtml(d)}
   `;
 }
 
@@ -3905,7 +3921,7 @@ function renderRegionFilterResults(){
         <tbody>
         ${approvedResults.map((s,i)=>{
           const p = s.pharmacist;
-          return `<tr><td class="num">${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city)}</td><td>${saleItemLabel(s)}</td><td class="num">${s.quantity}</td><td class="num">${fmtMoney(s.commissionAmount)}</td><td>${fmtDate(s.saleDate)}</td><td>${statusBadgeHtml(s)}</td><td>${s.invoiceImageUrl ? `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>` : '—'}</td></tr>`;
+          return `<tr><td class="num">${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city)}</td><td>${saleItemLabel(s)}</td><td class="num">${s.quantity}</td><td class="num">${fmtMoney(s.commissionAmount)}</td><td>${fmtDate(s.saleDate)}</td><td>${statusBadgeHtml(s)}</td><td>${invoiceViewButtonHtml(s)}</td></tr>`;
         }).join('')}
         </tbody>
       </table>
@@ -4008,7 +4024,7 @@ function renderCompReportResults(type){
         <tbody>
         ${rows.map((s,i)=>{
           const p = s.pharmacist;
-          return `<tr><td class="num">${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city)}</td><td>${s.compensationItem?esc(s.compensationItem.name):''}</td><td>${s.freeCompensationItem?esc(s.freeCompensationItem.name):''}</td><td>${fmtDate(s.saleDate)}</td><td>${statusBadgeHtml(s)}</td><td>${s.invoiceImageUrl ? `<button class="view-invoice-btn" onclick="openImageModal('${s.invoiceImageUrl}','فاتورة-${s.id}.jpg')">🔍 عرض</button>` : '—'}</td></tr>`;
+          return `<tr><td class="num">${i+1}</td><td>${esc(p?p.pharmacyName:'')}</td><td>${esc(s._city)}</td><td>${s.compensationItem?esc(s.compensationItem.name):''}</td><td>${s.freeCompensationItem?esc(s.freeCompensationItem.name):''}</td><td>${fmtDate(s.saleDate)}</td><td>${statusBadgeHtml(s)}</td><td>${invoiceViewButtonHtml(s)}</td></tr>`;
         }).join('')}
         </tbody>
       </table>
@@ -4047,7 +4063,7 @@ function computeFreeItemsByPharmacy(rows){
     if(!s.freeCompensationItem) continue;
     const pid = s.pharmacistId;
     const pname = s.pharmacist ? s.pharmacist.pharmacyName : 'غير معروف';
-    if(!byPharm[pid]) byPharm[pid] = { pharmacyName: pname, items: {}, total: 0 };
+    if(!byPharm[pid]) { byPharm[pid] = { pharmacyName: pname, items: {}, total: 0 }; }
     const iname = s.freeCompensationItem.name;
     byPharm[pid].items[iname] = (byPharm[pid].items[iname]||0) + 1;
     byPharm[pid].total += 1;
@@ -4197,7 +4213,7 @@ function printReportsPDF(){
 }
 
 /* ---------------- init ---------------- */
-(async function init(){
+async function bootstrapApp(){
   try{
     const params = new URLSearchParams(globalThis.location.search);
     const ref = params.get('ref');
@@ -4220,10 +4236,12 @@ function printReportsPDF(){
     }
     return;
   }catch(e){
+    // فحص الجلسة فشل (ما في كوكي صالحة أو السيرفر مش متاح): نكمل كزائر وبنعرض شاشة الدخول
     currentUser = null;
   }
   render();
-})();
+}
+bootstrapApp();
 </script>
 </body>
 </html>
