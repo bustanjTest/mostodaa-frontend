@@ -669,13 +669,10 @@ function shiftMonthKey(key, delta){
 }
 function fmtDate(d){
   if(!d) return '';
-  try{
-    const dt = d.length===10 ? new Date(d+'T00:00:00') : new Date(d);
-    return dt.toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
-  }catch(e){
-    // تاريخ بصيغة ما بنقدر نحوّلها: نعرض القيمة الأصلية بدل ما ينكسر الجدول
-    return d;
-  }
+  // ما في try/catch: new Date() و toLocaleDateString() ما بيرموا استثناء لقيم JSON (نص/رقم)،
+  // والتاريخ غير الصالح بيرجع النص "Invalid Date" بدون ما ينكسر الجدول
+  const dt = d.length===10 ? new Date(d+'T00:00:00') : new Date(d);
+  return dt.toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
 }
 function toDateInputValue(d){
   if(!d) return '';
