@@ -672,7 +672,10 @@ function fmtDate(d){
   try{
     const dt = d.length===10 ? new Date(d+'T00:00:00') : new Date(d);
     return dt.toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
-  }catch(e){ /* تاريخ بصيغة ما بنقدر نحوّلها: نعرض القيمة الأصلية بدل ما ينكسر الجدول */ return d; }
+  }catch(e){
+    // تاريخ بصيغة ما بنقدر نحوّلها: نعرض القيمة الأصلية بدل ما ينكسر الجدول
+    return d;
+  }
 }
 function toDateInputValue(d){
   if(!d) return '';
@@ -1062,6 +1065,7 @@ async function forgotReset(){
 
 function screenReg1(){
   const step1Done = pendingReg.name && pendingReg.phone && otpVerified;
+  const otpBannerHtml = otpCode ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(otpCode)}</span></div>` : '';
   return `
   ${topLogoBar()}
   <div class="center-wrap">
@@ -1094,7 +1098,7 @@ function screenReg1(){
       </div>` : ''}
 
       ${otpSent && !otpVerified ? `
-      ${otpCode ? `<div class="otp-banner"><span>وضع التطوير — رمز التحقق</span><span class="code">${esc(otpCode)}</span></div>` : ''}
+      ${otpBannerHtml}
       <div class="field">
         <label>أدخل رمز التحقق (6 أرقام)</label>
         <div class="row2">
@@ -1667,6 +1671,7 @@ function tabAdd(){
     return `<div class="section-title">إضافة عملية بيع</div><p style="color:var(--ink-soft);">جارِ تحميل الأصناف...</p>`;
   }
   const isEditing = false;
+  const invoiceSubmitLabel = isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'حفظ وتسجيل العمولة';
 
   if(lastSubmittedSale){
     return renderSubmittedSaleTicket(lastSubmittedSale);
@@ -1686,7 +1691,7 @@ function tabAdd(){
 
   ${addFlow.categoryId ? renderQtyStep() : ''}
 
-  ${addFlow.qty ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'حفظ وتسجيل العمولة', false) : ''}
+  ${addFlow.qty ? renderInvoiceStep(3, invoiceSubmitLabel, false) : ''}
   `;
 }
 
@@ -1732,6 +1737,7 @@ function tabAddCompensation(){
   }
 
   const isEditing = false;
+  const invoiceSubmitLabel = isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'إرسال طلب التعويض';
 
   if(lastSubmittedSale){
     return renderSubmittedCompensationTicket(lastSubmittedSale);
@@ -1763,7 +1769,7 @@ function tabAddCompensation(){
 
   ${addFlow.mainItemId ? renderFreeItemStep(items, mainItem) : ''}
 
-  ${addFlow.freeItemId ? renderInvoiceStep(3, isEditing ? 'حفظ التعديل وإعادة الإرسال' : 'إرسال طلب التعويض', true) : ''}
+  ${addFlow.freeItemId ? renderInvoiceStep(3, invoiceSubmitLabel, true) : ''}
   `;
 }
 
@@ -1957,7 +1963,9 @@ function historyHeaderHtml(){
   ${pillsStatusHtml}`;
 }
 function historyFreeItemsBtnHtml(isCompOnly){
-  return isCompOnly ? `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة'}</button>` : '';
+  if(!isCompOnly) return '';
+  const toggleLabel = showFreeItemsSummary ? 'إخفاء القطع الفري المستحقة' : '🎁 عرض القطع الفري المستحقة';
+  return `<button class="btn ghost sm" style="margin-bottom:16px;" onclick="toggleFreeItemsSummary()">${toggleLabel}</button>`;
 }
 function historySummaryHtml(mySales, isCompOnly){
   const approvedList = mySales.filter(s=>s.status==='APPROVED');
@@ -2028,14 +2036,20 @@ function tabHistory(){
 }
 
 // يرسم بطاقات الفواتير مع عناوين فاصلة بين الأيام/الأشهر (اليوم / أمس / أيلول ٢٠٢٦...)
+function compensationItemNameHtml(item){
+  return item ? esc(item.name) : '—';
+}
+function invoiceNumberSuffixHtml(s){
+  return s.invoiceNumber ? ' · فاتورة ' + esc(s.invoiceNumber) : '';
+}
 function historyTicketBodyHtml(s, isComp){
   return isComp ? `
-          <div class="cat" style="margin-bottom:3px;">القطعة المباعة : <b>${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
-          <div class="cat" style="margin-bottom:3px;">قطعة التعويض : <b>${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
+          <div class="cat" style="margin-bottom:3px;">القطعة المباعة : <b>${compensationItemNameHtml(s.compensationItem)}</b></div>
+          <div class="cat" style="margin-bottom:3px;">قطعة التعويض : <b>${compensationItemNameHtml(s.freeCompensationItem)}</b></div>
           <div class="meta">${fmtDate(s.saleDate)}</div>
           ` : `
           <div class="cat">${saleItemLabel(s)}</div>
-          <div class="meta">${s.quantity} قطعة · ${fmtDate(s.saleDate)}${s.invoiceNumber ? ' · فاتورة ' + esc(s.invoiceNumber) : ''}</div>
+          <div class="meta">${s.quantity} قطعة · ${fmtDate(s.saleDate)}${invoiceNumberSuffixHtml(s)}</div>
           `;
 }
 function historyTicketHtml(s, isComp){
@@ -2370,6 +2384,8 @@ function tabEarnings(){
     <div class="cnt"><span class="badge" style="background:var(--card2);color:var(--ink-soft);">بانتظار موافقة الإدارة</span></div>
   </div>` : '';
 
+  const lastTransferNote = summary.lastTransferAt ? ' — آخر تحويل ' + fmtDate(summary.lastTransferAt) : '';
+
   return `
   <div class="section-title">مستحقاتي</div>
   ${noPayoutInfoNote}
@@ -2378,7 +2394,7 @@ function tabEarnings(){
   ${summary.transferred>0 ? `
   <div class="history-summary" style="background:linear-gradient(155deg,#1D7A4C,#175A32);margin-bottom:18px;">
     <div>
-      <div class="lbl">تم تحويله سابقًا${summary.lastTransferAt ? ' — آخر تحويل ' + fmtDate(summary.lastTransferAt) : ''}</div>
+      <div class="lbl">تم تحويله سابقًا${lastTransferNote}</div>
       <div class="val num">${fmtMoney(summary.transferred)} د.أ</div>
     </div>
     <div class="cnt"><span class="badge ok">✓ تم تحويل المبلغ</span></div>
@@ -2506,13 +2522,17 @@ function copyReferralText(text){
 /* -------------------- قائمة مراجعة الفواتير (لوحة الأدمن) -------------------- */
 function reviewInfoHtml(s, isComp){
   return isComp ? `
-            <div class="m" style="margin-top:5px;">القطعة المباعة : <b style="color:var(--ink);">${s.compensationItem ? esc(s.compensationItem.name) : '—'}</b></div>
-            <div class="m">قطعة التعويض : <b style="color:var(--ink);">${s.freeCompensationItem ? esc(s.freeCompensationItem.name) : '—'}</b></div>
+            <div class="m" style="margin-top:5px;">القطعة المباعة : <b style="color:var(--ink);">${compensationItemNameHtml(s.compensationItem)}</b></div>
+            <div class="m">قطعة التعويض : <b style="color:var(--ink);">${compensationItemNameHtml(s.freeCompensationItem)}</b></div>
             <div class="m">${fmtDate(s.saleDate)}</div>
             ` : `
             <div class="n" style="margin-top:2px;">${saleItemLabel(s)}</div>
             <div class="m">${s.quantity} قطعة · ${fmtDate(s.saleDate)}<br>عمولة متوقعة: <b class="num">${fmtMoney(s.commissionAmount)} د.أ</b></div>
             `;
+}
+function similarImageOwnerLabel(similar){
+  if(similar.sameOwner) return 'أخرى لنفس الصيدلي';
+  return `من "${esc(similar.pharmacyName)}"`;
 }
 function reviewWarningsHtml(s){
   return `
@@ -2520,7 +2540,7 @@ function reviewWarningsHtml(s){
         ${s.duplicateImageCount > 0 ? `<div class="dup-warning">⚠️ نفس صورة الفاتورة مستخدمة في ${s.duplicateImageCount} عملية أخرى — تأكد إنها مش نفس الفاتورة مكررة</div>` : ''}
         ${s.invoiceNumberSharedWithOthers ? `<div class="dup-warning">⚠️ رقم الفاتورة هذا مستخدم من صيدلي آخر — الرجاء التدقيق</div>` : ''}
         ${s.similarInvoiceImage ? `<div class="dup-warning">
-          🔎 صورة مشابهة بنسبة ${s.similarInvoiceImage.similarity}% لفاتورة ${s.similarInvoiceImage.sameOwner ? 'أخرى لنفس الصيدلي' : `من "${esc(s.similarInvoiceImage.pharmacyName)}"`} — ممكن تكون نفس الفاتورة اتصوّرت مرتين
+          🔎 صورة مشابهة بنسبة ${s.similarInvoiceImage.similarity}% لفاتورة ${similarImageOwnerLabel(s.similarInvoiceImage)} — ممكن تكون نفس الفاتورة اتصوّرت مرتين
           <button class="btn ghost sm" style="margin-right:6px;padding:3px 10px;" onclick="openCompareImageModal('${s.invoiceImageUrl}','${s.similarInvoiceImage.imageUrl}',${s.similarInvoiceImage.similarity})">🖼️ قارن الصورتين</button>
         </div>` : ''}
   `;
@@ -2855,7 +2875,7 @@ function campaignRowHtml(c){
 }
 function campaignExpandedHtml(c){
   if(messagesExpandedCampaignId !== c.id) return '';
-      const detail = messagesCampaignDetailCache[c.id];
+  const detail = messagesCampaignDetailCache[c.id];
   if(!detail?.recipients){
     return `<tr><td colspan="9" style="color:var(--ink-soft);padding:14px;">جارِ التحميل...</td></tr>`;
   }
@@ -3043,15 +3063,16 @@ function tabCategoriesMgmt(){
   }
   const dep = isSuperAdmin ? adminDeptFilter : currentUser.department;
   const isCosmetics = dep === 'COSMETICS';
+  const subTabClass = key => catMgmtSubTab===key ? '' : 'ghost';
 
   return `
   <div class="admin-section">
     <div class="section-title">إدارة أصناف قسم ${isSuperAdmin ? deptLabel(dep) : ''}</div>
     ${isCosmetics ? `
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-      <button class="btn sm ${catMgmtSubTab==='NORMAL'?'':'ghost'}" onclick="switchCatMgmtSubTab('NORMAL')">الأصناف العادية</button>
-      <button class="btn sm ${catMgmtSubTab==='ASIL'?'':'ghost'}" onclick="switchCatMgmtSubTab('ASIL')">أصناف تعويض الأصيل</button>
-      <button class="btn sm ${catMgmtSubTab==='ZAROZA'?'':'ghost'}" onclick="switchCatMgmtSubTab('ZAROZA')">أصناف تعويض زاروزا</button>
+      <button class="btn sm ${subTabClass('NORMAL')}" onclick="switchCatMgmtSubTab('NORMAL')">الأصناف العادية</button>
+      <button class="btn sm ${subTabClass('ASIL')}" onclick="switchCatMgmtSubTab('ASIL')">أصناف تعويض الأصيل</button>
+      <button class="btn sm ${subTabClass('ZAROZA')}" onclick="switchCatMgmtSubTab('ZAROZA')">أصناف تعويض زاروزا</button>
     </div>` : ''}
     ${(!isCosmetics || catMgmtSubTab==='NORMAL') ? renderNormalCategoriesMgmt() : renderCompensationItemsMgmt(catMgmtSubTab)}
   </div>
@@ -3441,6 +3462,7 @@ function tabPayouts(){
   const t = d.totals;
   const isLastMonth = d.scope === 'last_month';
   const lastMonthLabel = fmtMonth(shiftMonthKey(currentMonthKey(), -1));
+  const emptyPayoutsTitle = isLastMonth ? ('لا توجد مستحقات لـ' + lastMonthLabel) : 'لا توجد مستحقات حاليًا';
 
   const warn = t.pendingInvoices > 0 ? `
   <div class="dup-warning" style="font-size:14px;line-height:1.8;padding:14px;margin-bottom:14px;">
@@ -3473,7 +3495,7 @@ function tabPayouts(){
       <div class="stat-card"><div class="v num">${t.unpaidCount}</div><div class="l">صيدلي بانتظار التحويل</div></div>
     </div>
 
-    ${d.rows.length===0 ? `<div class="empty-state"><div class="ic">💰</div><div class="t">${isLastMonth ? ('لا توجد مستحقات لـ' + lastMonthLabel) : 'لا توجد مستحقات حاليًا'}</div></div>` : `
+    ${d.rows.length===0 ? `<div class="empty-state"><div class="ic">💰</div><div class="t">${emptyPayoutsTitle}</div></div>` : `
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr>
@@ -4213,33 +4235,33 @@ function printReportsPDF(){
 }
 
 /* ---------------- init ---------------- */
-async function bootstrapApp(){
-  try{
-    const params = new URLSearchParams(globalThis.location.search);
-    const ref = params.get('ref');
-    if(ref && /^[A-Za-z0-9]{4,12}$/.test(ref.trim())) incomingReferralCode = ref.trim().toUpperCase();
-  }catch(e){ /* رابط غير صالح — نكمل بدون كود إحالة */ }
+function bootstrapApp(){
+  // new URLSearchParams(string) و params.get() ما بيرموا استثناء، فما في داعي لـ try/catch هون
+  const params = new URLSearchParams(globalThis.location.search);
+  const ref = params.get('ref');
+  if(ref && /^[A-Za-z0-9]{4,12}$/.test(ref.trim())) incomingReferralCode = ref.trim().toUpperCase();
 
   document.getElementById('app').innerHTML = `<div class="center-wrap"><div style="color:var(--ink-soft);">جارِ التحميل...</div></div>`;
   // ما في طريقة لجافاسكربت يعرف مسبقًا إذا في كوكي جلسة صالحة (httpOnly) — فبنحاول
-  // /users/me دايمًا، والسيرفر هو اللي بيقرر (401 لو ما في جلسة، ونعتبره تسجيل دخول عادي)
-  try{
-    await loadMe();
-    clearAllCaches();
-    if(currentUser.type === 'admin'){
-      adminPanelChosen = false; adminDeptFilter = '';
-      activeTab = 'admin';
+  // /users/me دايمًا، والسيرفر هو اللي بيقرر (401 لو ما في جلسة، ونعتبره تسجيل دخول عادي).
+  // ملاحظة: top-level await غير ممكن هون لأنه بيحتاج type="module" على وسم السكربت، وهاد بيخلي كل الدوال
+  // خاصة بالموديول فبتتعطل معالجات onclick/onchange الـ inline — لهيك بنستخدم سلسلة Promise داخل الدالة.
+  loadMe()
+    .then(()=>{
+      clearAllCaches();
+      if(currentUser.type === 'admin'){
+        adminPanelChosen = false; adminDeptFilter = '';
+        activeTab = 'admin';
+      } else {
+        activeTab = 'add';
+      }
       render();
-    } else {
-      activeTab = 'add';
+    })
+    .catch(()=>{
+      // فحص الجلسة فشل (ما في كوكي صالحة أو السيرفر مش متاح): نكمل كزائر وبنعرض شاشة الدخول
+      currentUser = null;
       render();
-    }
-    return;
-  }catch(e){
-    // فحص الجلسة فشل (ما في كوكي صالحة أو السيرفر مش متاح): نكمل كزائر وبنعرض شاشة الدخول
-    currentUser = null;
-  }
-  render();
+    });
 }
 bootstrapApp();
 </script>
