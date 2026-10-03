@@ -174,7 +174,7 @@ let messagesLastResult = null;       // نتيجة آخر حملة أُرسلت 
 
 // الأدمن داخل لوحة الكوزمتك — تظهر له تبويبات تعويض الأصيل/زاروزا
 function isCosmeticsAdminContext(){
-  if(!currentUser || currentUser.type!=='admin') return false;
+  if(currentUser?.type!=='admin') return false;
   return adminDeptFilter === 'COSMETICS';
 }
 
@@ -302,9 +302,13 @@ function statusBadgeHtml(s){
   if(s.status==='REJECTED') return `<span class="badge rejected">مرفوضة</span>`;
   return `<span class="badge pending">قيد المراجعة</span>`;
 }
+// اسم ملف تحميل صورة الفاتورة (نفس الصيغة المستخدمة سابقًا بكل المواضع)
+function invoiceFileName(s){
+  return `فاتورة-${s.id}.jpg`;
+}
 function invoiceViewButtonHtml(s){
   if(!s.invoiceImageUrl) return '—';
-  return `<button class="view-invoice-btn" data-click="openImageModal" ${DA('click', `${s.invoiceImageUrl}`, `فاتورة-${s.id}.jpg`)}>🔍 عرض</button>`;
+  return `<button class="view-invoice-btn" data-click="openImageModal" ${DA('click', String(s.invoiceImageUrl), invoiceFileName(s))}>🔍 عرض</button>`;
 }
 function payoutTypeLabel(t){
   if(t==='PHONE') return 'رقم هاتف';
@@ -432,7 +436,7 @@ function screenDeptChoice(){
       <h2 class="sx-12">أهلًا ${esc(currentUser.fullName)} 👋</h2>
       <p class="sx-13">اختر القسم اللي بدك تسجل فيه عملية بيع</p>
       ${DEPARTMENTS.map(d=>`
-        <button class="btn ${d.value==='MEDICINE'?'':'accent'} sx-14" data-click="chooseDepartment" ${DA('click', `${d.value}`)}>
+        <button class="btn ${d.value==='MEDICINE'?'':'accent'} sx-14" data-click="chooseDepartment" ${DA('click', String(d.value))}>
           ${d.icon} تسجيل عملية بيع ${d.label}
         </button>`).join('')}
       <div class="sx-15">
@@ -451,7 +455,7 @@ function screenAdminPanelChoice(){
       <h2 class="sx-12">أهلًا ${esc(currentUser.fullName)} 👋</h2>
       <p class="sx-13">اختر لوحة التحكم اللي بدك تدخل عليها</p>
       ${DEPARTMENTS.map(d=>`
-        <button class="btn ${d.value==='MEDICINE'?'':'accent'} sx-14" data-click="chooseAdminPanel" ${DA('click', `${d.value}`)}>
+        <button class="btn ${d.value==='MEDICINE'?'':'accent'} sx-14" data-click="chooseAdminPanel" ${DA('click', String(d.value))}>
           ${d.icon} الدخول إلى لوحة تحكم ${d.label}
         </button>`).join('')}
       <div class="sx-15">
@@ -513,7 +517,7 @@ function screenCosmeticsChoice(){
       <h2 class="sx-12">قسم الكوزمتك 💄</h2>
       <p class="sx-13">اختر نوع العملية اللي بدك تسجلها</p>
       ${SALE_MODES.map(m=>`
-        <button class="btn ${m.value==='NORMAL'?'':'accent'} sx-16" data-click="chooseSaleMode" ${DA('click', `${m.value}`)}>
+        <button class="btn ${m.value==='NORMAL'?'':'accent'} sx-16" data-click="chooseSaleMode" ${DA('click', String(m.value))}>
           ${m.icon} ${m.label}
         </button>`).join('')}
       <div class="sx-15">
@@ -1063,7 +1067,7 @@ function shellHeaderBarsHtml(isAdmin){
 }
 
 function shellTabButtonHtml([key, icon, label]){
-  return `<button class="${activeTab===key?'active':''}" data-click="switchTab" ${DA('click', `${key}`)}><span class="ic">${icon}</span>${label}</button>`;
+  return `<button class="${activeTab===key?'active':''}" data-click="switchTab" ${DA('click', String(key))}><span class="ic">${icon}</span>${label}</button>`;
 }
 function shellTabbarHtml(isAdmin){
   if(!isAdmin) return SHELL_USER_TABS.map(shellTabButtonHtml).join('\n      ');
@@ -1537,12 +1541,15 @@ function finalizeSale(){
 // من شاشة "تم إرسال العملية": ينقل الصيدلي لتبويب السجل مباشرة، وبيفتح الفلتر المناسب
 // لنوع العملية اللي لسا مسجّلها (عادية / تعويض الأصيل / تعويض زاروزا) عشان يشوفها فورًا.
 // (قسم الأدوية دايمًا "عادية" وبتنضبط تلقائيًا بـ switchTab.)
-function goToHistoryAfterSale(){
+async function goToHistoryAfterSale(){
   const type = lastSubmittedSale?.saleType || saleMode || 'NORMAL';
   historyFilterType = (type==='ASIL' || type==='ZAROZA') ? type : 'NORMAL';
   historyStatusFilter = 'ALL';
   showFreeItemsSummary = false;
-  switchTab('history');
+  // switchTab بتلتقط أخطاء تحميل البيانات داخليًا (loadTabData)؛ هون بنغطّي فقط الخطأ المتزامن من render()
+  try{
+    await switchTab('history');
+  }catch(e){ toast(e.message, 'danger'); }
 }
 
 function saleItemLabel(s){
@@ -1564,12 +1571,12 @@ function historyHeaderHtml(){
   const typePills = historyTypePills();
   const pillsTypeHtml = typePills.length ? `
   <div class="filter-pills">
-    ${typePills.map(f=>`<button class="pill ${historyFilterType===f.value?'active':''}" data-click="pickHistoryType" ${DA('click', `${f.value}`)}>${esc(f.label)}</button>`).join('')}
+    ${typePills.map(f=>`<button class="pill ${historyFilterType===f.value?'active':''}" data-click="pickHistoryType" ${DA('click', String(f.value))}>${esc(f.label)}</button>`).join('')}
   </div>` : '';
 
   const pillsStatusHtml = `
   <div class="filter-pills sx-27">
-    ${HISTORY_STATUS_PILLS.map(f=>`<button class="pill sub ${f.value} ${historyStatusFilter===f.value?'active':''}" data-click="pickHistoryStatus" ${DA('click', `${f.value}`)}>${esc(f.label)}</button>`).join('')}
+    ${HISTORY_STATUS_PILLS.map(f=>`<button class="pill sub ${f.value} ${historyStatusFilter===f.value?'active':''}" data-click="pickHistoryStatus" ${DA('click', String(f.value))}>${esc(f.label)}</button>`).join('')}
   </div>`;
   return `
   <div class="section-title">${historyFilterLabel(historyFilterType)}</div>
@@ -1670,7 +1677,7 @@ function historyTicketHtml(s, isComp){
   return `
     <div class="ticket">
       <div class="sale-row">
-        ${s.invoiceImageUrl ? `<img class="thumb" src="${s.invoiceImageUrl}" data-click="openImageModal" ${DA('click', `${s.invoiceImageUrl}`, `فاتورة-${s.id}.jpg`)}>` : ''}
+        ${s.invoiceImageUrl ? `<img class="thumb" src="${s.invoiceImageUrl}" data-click="openImageModal" ${DA('click', String(s.invoiceImageUrl), invoiceFileName(s))}>` : ''}
         <div class="sx-26">
           ${historyTicketBodyHtml(s, isComp)}
           <div class="sx-59">${statusBadgeHtml(s)}</div>
@@ -2070,7 +2077,7 @@ function tabReferral(){
     <label>كود الإحالة تبعك</label>
     <div class="otp-banner sx-74">
       <span class="code sx-75">${s.referralCode || '—'}</span>
-      <button class="btn ghost sm" data-click="copyReferralText" ${DA('click', `${s.referralCode}`)}>نسخ الكود</button>
+      <button class="btn ghost sm" data-click="copyReferralText" ${DA('click', String(s.referralCode))}>نسخ الكود</button>
     </div>
   </div>
 
@@ -2078,7 +2085,7 @@ function tabReferral(){
     <label>رابط الدعوة (يفتح مباشرة على صفحة التسجيل بالكود معبّى تلقائيًا)</label>
     <div class="otp-banner sx-74">
       <span class="sx-76">${referralLink}</span>
-      <button class="btn ghost sm" data-click="copyReferralText" ${DA('click', `${referralLink}`)}>نسخ الرابط</button>
+      <button class="btn ghost sm" data-click="copyReferralText" ${DA('click', String(referralLink))}>نسخ الرابط</button>
     </div>
   </div>
 
@@ -2155,7 +2162,7 @@ function reviewWarningsHtml(s){
         ${s.invoiceNumberSharedWithOthers ? `<div class="dup-warning">⚠️ رقم الفاتورة هذا مستخدم من صيدلي آخر — الرجاء التدقيق</div>` : ''}
         ${s.similarInvoiceImage ? `<div class="dup-warning">
           🔎 صورة مشابهة بنسبة ${s.similarInvoiceImage.similarity}% لفاتورة ${similarImageOwnerLabel(s.similarInvoiceImage)} — ممكن تكون نفس الفاتورة اتصوّرت مرتين
-          <button class="btn ghost sm sx-84" data-click="openCompareImageModal" ${DA('click', `${s.invoiceImageUrl}`, `${s.similarInvoiceImage.imageUrl}`, (s.similarInvoiceImage.similarity))}>🖼️ قارن الصورتين</button>
+          <button class="btn ghost sm sx-84" data-click="openCompareImageModal" ${DA('click', String(s.invoiceImageUrl), String(s.similarInvoiceImage.imageUrl), (s.similarInvoiceImage.similarity))}>🖼️ قارن الصورتين</button>
         </div>` : ''}
   `;
 }
@@ -2165,12 +2172,12 @@ function reviewActionsHtml(s, isRejecting){
           <textarea id="rejectReason_${s.id}" rows="2" placeholder="اكتب سبب الرفض هنا... (3 أحرف على الأقل)"></textarea>
         </div>
         <div class="review-actions">
-          <button class="btn danger sm" data-click="confirmRejectSale" ${DA('click', `${s.id}`)}>تأكيد الرفض</button>
+          <button class="btn danger sm" data-click="confirmRejectSale" ${DA('click', String(s.id))}>تأكيد الرفض</button>
           <button class="btn ghost sm" data-click="cancelReject">إلغاء</button>
         </div>` : `
         <div class="review-actions">
-          <button class="btn approve sm" data-click="approveSale" ${DA('click', `${s.id}`)}>✓ قبول</button>
-          <button class="btn danger sm" data-click="startReject" ${DA('click', `${s.id}`)}>✕ رفض</button>
+          <button class="btn approve sm" data-click="approveSale" ${DA('click', String(s.id))}>✓ قبول</button>
+          <button class="btn danger sm" data-click="startReject" ${DA('click', String(s.id))}>✕ رفض</button>
         </div>`;
 }
 function reviewCardHtml(s, showDept){
@@ -2180,7 +2187,7 @@ function reviewCardHtml(s, showDept){
   return `
       <div class="review-card">
         <div class="review-top">
-          ${s.invoiceImageUrl ? `<img class="review-thumb" src="${s.invoiceImageUrl}" data-click="openImageModal" ${DA('click', `${s.invoiceImageUrl}`, `فاتورة-${s.id}.jpg`)}>` : ''}
+          ${s.invoiceImageUrl ? `<img class="review-thumb" src="${s.invoiceImageUrl}" data-click="openImageModal" ${DA('click', String(s.invoiceImageUrl), invoiceFileName(s))}>` : ''}
           <div class="review-info">
             <div class="n">${esc(p ? p.pharmacyName : '')} ${isComp ? `<span class="badge sx-86">${saleModeLabel(s.saleType)}</span>` : ''} ${showDept ? `<span class="badge sx-86">${deptLabel(s.department)}</span>` : ''}</div>
             ${reviewInfoHtml(s, isComp)}
@@ -2327,7 +2334,7 @@ function renderMessagePharmacistOptions(){
   if(filtered.length===0) return `<div class="combo-empty">لا يوجد نتائج</div>`;
   return filtered.map(p=>`
     <label class="sx-89">
-      <input type="checkbox" class="sx-90" ${messagesState.pharmacistIds.includes(p.id)?'checked':''} data-change="toggleMessagePharmacist" ${DA('change', `${p.id}`)}>
+      <input type="checkbox" class="sx-90" ${messagesState.pharmacistIds.includes(p.id)?'checked':''} data-change="toggleMessagePharmacist" ${DA('change', String(p.id))}>
       <span class="sx-26">${esc(p.pharmacyName)}</span><span class="sx-91">${esc(p.city||'')}</span>
     </label>`).join('');
 }
@@ -2383,7 +2390,7 @@ async function requestMessageApproval(){
 // المرحلة 3: إدخال الرمز → الإرسال الفعلي (السيرفر بيرفض أي إرسال بدون رمز صحيح لنفس المحتوى)
 async function confirmMessageSend(){
   const p = messagesPendingSend;
-  if(!p || p.stage!=='code' || messagesSending) return;
+  if(p?.stage!=='code' || messagesSending) return;
   const codeEl = document.getElementById('msgApprovalCode');
   const code = codeEl ? codeEl.value.trim() : '';
   if(!/^\d{6}$/.test(code)){ toast('أدخل رمز الاعتماد المكوّن من ٦ أرقام', 'danger'); return; }
@@ -2409,7 +2416,9 @@ async function confirmMessageSend(){
     messagesSending = false;
     render();
   }
-  if(messagesLastResult) pollMessageCampaign(messagesLastResult.id);
+  // تشغيل المتابعة بالخلفية عن قصد بدون انتظار (لو انتظرناها بيضل الزر بحالة "جارِ الإرسال" حتى ١٠ دقائق).
+  // pollMessageCampaign بتلتقط كل أخطائها داخليًا (try/catch/finally) فما بترجع Promise مرفوض أبدًا.
+  if(messagesLastResult) void pollMessageCampaign(messagesLastResult.id);
 }
 
 // الإرسال بيصير بالخلفية بالسيرفر → بنتابع تقدّم الحملة كل ٣ ثواني ونحدّث الصندوقين المعنيين مباشرة
@@ -2484,7 +2493,7 @@ function campaignRowHtml(c){
           <td class="num">${counts.SENT||0}</td>
           <td class="num">${counts.FAILED||0}</td>
           <td>${fmtDate(c.createdAt)}</td>
-          <td><button class="btn ghost sm" data-click="toggleMessageCampaignDetail" ${DA('click', `${c.id}`)}>${messagesExpandedCampaignId===c.id ? 'إخفاء' : 'التفاصيل'}</button></td>
+          <td><button class="btn ghost sm" data-click="toggleMessageCampaignDetail" ${DA('click', String(c.id))}>${messagesExpandedCampaignId===c.id ? 'إخفاء' : 'التفاصيل'}</button></td>
         </tr>`;
 }
 function campaignExpandedHtml(c){
@@ -2550,7 +2559,7 @@ function renderMessagesLastResultInner(){
 function messagesCityOptionsHtml(filtersDisabled){
   return JORDAN_CITIES.map(c=>`
         <label class="sx-city-chip ${messagesState.cities.includes(c)?'sx-city-chip-on':'sx-city-chip-off'}">
-          <input type="checkbox" class="sx-90" ${messagesState.cities.includes(c)?'checked':''} ${filtersDisabled?'disabled':''} data-change="toggleMessageCity" ${DA('change', `${c}`)}> ${c}
+          <input type="checkbox" class="sx-90" ${messagesState.cities.includes(c)?'checked':''} ${filtersDisabled?'disabled':''} data-change="toggleMessageCity" ${DA('change', String(c))}> ${c}
         </label>`).join('');
 }
 function messagesReviewStageHtml(summary){
@@ -2708,7 +2717,7 @@ function renderNormalCategoriesMgmt(){
           <input type="number" id="editCatPrice_${c.id}" min="0" step="0.01" value="${c.commissionPerUnit}">
         </div>
         <div class="sx-113">
-          <button class="btn accent sm" data-click="saveEditCategory" ${DA('click', `${c.id}`)}>حفظ</button>
+          <button class="btn accent sm" data-click="saveEditCategory" ${DA('click', String(c.id))}>حفظ</button>
           <button class="btn ghost sm" data-click="cancelEditCategory">إلغاء</button>
         </div>
       </div>`;
@@ -2720,10 +2729,10 @@ function renderNormalCategoriesMgmt(){
         <div class="p">${fmtMoney(c.commissionPerUnit)} دينار لكل قطعة</div>
       </div>
       <div class="sx-115">
-        <button class="btn ghost sm" data-click="startEditCategory" ${DA('click', `${c.id}`)}>✏️ تعديل</button>
+        <button class="btn ghost sm" data-click="startEditCategory" ${DA('click', String(c.id))}>✏️ تعديل</button>
         ${c.isActive===false
-          ? `<button class="btn ghost sm" data-click="reactivateCategory" ${DA('click', `${c.id}`)}>تفعيل</button>`
-          : `<button class="btn danger sm" data-click="deleteCategory" ${DA('click', `${c.id}`)}>حذف</button>`}
+          ? `<button class="btn ghost sm" data-click="reactivateCategory" ${DA('click', String(c.id))}>تفعيل</button>`
+          : `<button class="btn danger sm" data-click="deleteCategory" ${DA('click', String(c.id))}>حذف</button>`}
       </div>
     </div>
   `;
@@ -2835,8 +2844,8 @@ function renderCompensationItemsMgmt(type){
         <div class="p">${fmtMoney(c.price)} دينار</div>
       </div>
       ${c.isActive===false
-        ? `<button class="btn ghost sm" data-click="reactivateCompensationItem" ${DA('click', `${c.id}`, `${type}`)}>تفعيل</button>`
-        : `<button class="btn danger sm" data-click="deleteCompensationItem" ${DA('click', `${c.id}`, `${type}`)}>حذف</button>`}
+        ? `<button class="btn ghost sm" data-click="reactivateCompensationItem" ${DA('click', String(c.id), String(type))}>تفعيل</button>`
+        : `<button class="btn danger sm" data-click="deleteCompensationItem" ${DA('click', String(c.id), String(type))}>حذف</button>`}
     </div>
   `).join('')}
   <div class="field sx-116">
@@ -2847,7 +2856,7 @@ function renderCompensationItemsMgmt(type){
     <label>السعر (دينار)</label>
     <input type="number" id="newCompItemPrice_${type}" min="0" step="0.01" placeholder="مثال: 15">
   </div>
-  <button class="btn accent" data-click="addCompensationItem" ${DA('click', `${type}`)}>إضافة الصنف</button>
+  <button class="btn accent" data-click="addCompensationItem" ${DA('click', String(type))}>إضافة الصنف</button>
   `;
 }
 
@@ -2969,7 +2978,7 @@ function renderStatsResults(){
           <td>${esc(u.fullName)}</td><td class="num">${esc(u.phoneNumber)}</td><td>${esc(u.pharmacyName)}</td><td>${esc(u.city)}</td><td>${esc(u.region)}</td>
           <td>
             ${u.isActive ? `<span class="badge ok">مفعّل</span>` : `<span class="badge rejected">موقوف</span>`}
-            <button class="btn ${u.isActive?'danger':'approve'} sm sx-114" data-click="togglePharmacistActive" ${DA('click', `${u.id}`, (!u.isActive))}>${u.isActive?'إيقاف':'تفعيل'}</button>
+            <button class="btn ${u.isActive?'danger':'approve'} sm sx-114" data-click="togglePharmacistActive" ${DA('click', String(u.id), (!u.isActive))}>${u.isActive?'إيقاف':'تفعيل'}</button>
           </td>
         </tr>`).join('')}
         </tbody>
@@ -3116,7 +3125,7 @@ function tabPayouts(){
 function renderPayoutRow(r){
   const alerts = [];
   if(r.pendingCount > 0){
-    alerts.push(`<div class="dup-warning sx-125">⚠️ ${r.pendingCount} فاتورة معلّقة <button class="btn sm sx-126" data-click="reviewPharmacist" ${DA('click', `${r.pharmacistId}`)}>مراجعة الفواتير</button></div>`);
+    alerts.push(`<div class="dup-warning sx-125">⚠️ ${r.pendingCount} فاتورة معلّقة <button class="btn sm sx-126" data-click="reviewPharmacist" ${DA('click', String(r.pharmacistId))}>مراجعة الفواتير</button></div>`);
   }
   if(r.payoutInfoChangedRecently){
     alerts.push(`<div class="sx-127">🔔 تغيّرت بيانات الاستلام مؤخرًا — تأكد منها</div>`);
@@ -3129,7 +3138,7 @@ function renderPayoutRow(r){
     ? `<div class="sx-129">أدوية ${fmtMoney(r.medicineAmount)} · كوزمتك ${fmtMoney(r.cosmeticsAmount)}</div>` : '';
 
   const action = r.amount > 0
-    ? `<button class="btn approve sm" data-click="startConfirmPayout" ${DA('click', `${r.pharmacistId}`)}>✓ تأكيد التحويل</button>`
+    ? `<button class="btn approve sm" data-click="startConfirmPayout" ${DA('click', String(r.pharmacistId))}>✓ تأكيد التحويل</button>`
     : `<span class="sx-130">لا يوجد مبلغ جاهز</span>`;
 
   const row = `<tr>
@@ -3157,7 +3166,7 @@ function renderPayoutRow(r){
       </div>
       <div class="sx-138">حوّل المبلغ من تطبيق البنك أولًا، وبعدها اضغط "نعم، تم التحويل" لتسجيله.</div>
       <div class="sx-139">
-        <button class="btn approve sm" ${noInfo?'disabled':''} data-click="confirmPayout" ${DA('click', `${r.pharmacistId}`)}>نعم، تم التحويل</button>
+        <button class="btn approve sm" ${noInfo?'disabled':''} data-click="confirmPayout" ${DA('click', String(r.pharmacistId))}>نعم، تم التحويل</button>
         <button class="btn ghost sm" data-click="cancelConfirmPayout">إلغاء</button>
       </div>
     </div>
@@ -3295,7 +3304,7 @@ function referralDueRowHtml(r){
           <td class="num">${r.rewardsCount}</td>
           <td class="num"><b>${fmtMoney(r.totalAmount)}</b></td>
           <td>${hasPayoutInfo ? `${payoutTypeLabel(r.payoutType)} · <span class="num">${esc(r.payoutValue)}</span>` : `<span class="sx-141">لم يُدخل بعد</span>`}</td>
-          <td>${hasPayoutInfo ? `<button class="btn sm" data-click="startConfirmReferral" ${DA('click', `${r.pharmacistId}`)}>تأكيد التحويل</button>` : '—'}</td>
+          <td>${hasPayoutInfo ? `<button class="btn sm" data-click="startConfirmReferral" ${DA('click', String(r.pharmacistId))}>تأكيد التحويل</button>` : '—'}</td>
         </tr>`;
 }
 function referralConfirmRowHtml(r){
@@ -3304,7 +3313,7 @@ function referralConfirmRowHtml(r){
           <div class="sx-52">رح تؤكد تحويل <b>${fmtMoney(r.totalAmount)} د.أ</b> (${r.rewardsCount} مكافأة) لـ <b>${esc(r.fullName)}</b> عبر ${payoutTypeLabel(r.payoutType)} - <span class="num">${esc(r.payoutValue)}</span>.</div>
           <div class="field sx-142"><label>رقم عملية التحويل (اختياري)</label><input type="text" id="referralRefInput" placeholder="مثال: CLIQ-12345"></div>
           <div class="sx-139">
-            <button class="btn approve sm" data-click="confirmReferralTransferUI" ${DA('click', `${r.pharmacistId}`, (r.totalAmount), (r.rewardsCount))}>نعم، تم التحويل فعليًا</button>
+            <button class="btn approve sm" data-click="confirmReferralTransferUI" ${DA('click', String(r.pharmacistId), (r.totalAmount), (r.rewardsCount))}>نعم، تم التحويل فعليًا</button>
             <button class="btn ghost sm" data-click="cancelConfirmReferral">إلغاء</button>
           </div>
         </td></tr>`;
@@ -3439,9 +3448,9 @@ function pharmacistComboField(ns, opts){
     <div class="combo-wrap">
       <input type="text" id="filterPharmacistSearch_${ns}" placeholder="اكتب اسم الصيدلية أو اضغط لعرض الكل"
         value="${esc(f.pharmacistName||'')}" autocomplete="off"
-        data-input="filterPharmacistCombo" ${DA('input', `${ns}`)} data-focus="openPharmacistCombo" ${DA('focus', `${ns}`)}
-        data-blur="closePharmacistComboDelayed" ${DA('blur', `${ns}`)}>
-      ${f.pharmacistId ? `<button type="button" class="combo-clear" data-click="clearPharmacistCombo" ${DA('click', `${ns}`)}>✕</button>` : ''}
+        data-input="filterPharmacistCombo" ${DA('input', String(ns))} data-focus="openPharmacistCombo" ${DA('focus', String(ns))}
+        data-blur="closePharmacistComboDelayed" ${DA('blur', String(ns))}>
+      ${f.pharmacistId ? `<button type="button" class="combo-clear" data-click="clearPharmacistCombo" ${DA('click', String(ns))}>✕</button>` : ''}
       <div class="combo-list hidden" id="filterPharmacistList_${ns}">${renderPharmacistComboOptions(ns, '')}</div>
     </div>
   </div>`;
@@ -3452,7 +3461,7 @@ function renderPharmacistComboOptions(ns, query){
   const q = (query||'').trim();
   const list = (pharmacistsCache||[]).slice().sort((a,b)=> (a.pharmacyName||'').localeCompare(b.pharmacyName||'', 'ar'));
   const filtered = q ? list.filter(p => (p.pharmacyName||'').includes(q) || (p.fullName||'').includes(q)) : list;
-  const allOpt = `<div class="combo-opt ${!f.pharmacistId?'active':''}" data-click="pickPharmacistCombo" ${DA('click', `${ns}`, '', '')}>كل الصيدليات</div>`;
+  const allOpt = `<div class="combo-opt ${!f.pharmacistId?'active':''}" data-click="pickPharmacistCombo" ${DA('click', String(ns), '', '')}>كل الصيدليات</div>`;
   if(pharmacistsCache===null){
     return allOpt + `<div class="combo-empty">جارِ تحميل الصيدليات...</div>`;
   }
@@ -3460,7 +3469,7 @@ function renderPharmacistComboOptions(ns, query){
     return allOpt + `<div class="combo-empty">لا توجد صيدلية بهاد الاسم</div>`;
   }
   return allOpt + filtered.map(p=>`
-    <div class="combo-opt ${f.pharmacistId===p.id?'active':''}" data-click="pickPharmacistCombo" ${DA('click', `${ns}`, `${p.id}`)}>
+    <div class="combo-opt ${f.pharmacistId===p.id?'active':''}" data-click="pickPharmacistCombo" ${DA('click', String(ns), String(p.id))}>
       <span>${esc(p.pharmacyName)}</span><span class="combo-sub">${esc(p.city||'')}</span>
     </div>`).join('');
 }
@@ -3592,7 +3601,7 @@ function tabCompReports(type){
         <input type="date" id="compFilterToDate_${type}" value="${f.toDate}">
       </div>
     </div>
-    <button class="btn" data-click="runCompReportFilter" ${DA('click', `${type}`)}>عرض التقرير</button>
+    <button class="btn" data-click="runCompReportFilter" ${DA('click', String(type))}>عرض التقرير</button>
 
     ${compReportsActive[type] ? renderCompReportResults(type) : ''}
   </div>
@@ -3641,8 +3650,8 @@ function renderCompReportResults(type){
     </div>
     ${rows.length===0 ? `<div class="empty-state"><div class="ic">🔎</div><div class="t">لا توجد فواتير مؤكدة</div><div class="d">في ${esc(label)} بين ${fmtDate(f.fromDate)} و${fmtDate(f.toDate)}</div></div>` : `
     <div class="sx-120">
-      <button class="export-btn" data-click="exportCompDetailedExcel" ${DA('click', `${type}`)}>⬇ تصدير تفصيلي Excel</button>
-      <button class="export-btn" data-click="printCompFreeItemsPDF" ${DA('click', `${type}`)}>🖨️ تصدير PDF لكل صيدلية</button>
+      <button class="export-btn" data-click="exportCompDetailedExcel" ${DA('click', String(type))}>⬇ تصدير تفصيلي Excel</button>
+      <button class="export-btn" data-click="printCompFreeItemsPDF" ${DA('click', String(type))}>🖨️ تصدير PDF لكل صيدلية</button>
     </div>
     <div class="table-wrap">
       <table class="data-table">
