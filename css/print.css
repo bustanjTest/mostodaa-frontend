@@ -1,0 +1,21 @@
+body{ font-family:'Segoe UI', Tahoma, Arial, sans-serif; margin:0; padding:0; color:#1a1a1a; }
+.pdf-page{ padding:36px 40px; }
+.pdf-header{ margin-bottom:22px; border-bottom:3px solid #1D6F3E; padding-bottom:14px; }
+.pdf-title{ font-size:15px; color:#555; margin-bottom:4px; }
+.pdf-pharmacy{ font-size:24px; font-weight:800; color:#1D6F3E; }
+.pdf-date{ font-size:12px; color:#888; margin-top:6px; }
+.pdf-table{ width:100%; border-collapse:collapse; margin-top:14px; }
+.pdf-table th, .pdf-table td{ border:1px solid #ddd; padding:9px 10px; text-align:right; font-size:13px; }
+.pdf-table th{ background:#E9F5EF; color:#1D6F3E; font-weight:800; }
+@media print{ .pdf-page{ padding:24px 30px; } }
+
+/* تقرير عمولات البيع */
+.pdf-sales .pdf-table tfoot td{ font-weight:800; background:#F7F7F7; }
+
+/* القطع الواجب تعويضها */
+.pdf-comp .pdf-page{ page-break-after: always; }
+.pdf-comp .pdf-page:last-child{ page-break-after: auto; }
+.pdf-comp .pdf-pharmacy{ font-size:26px; }
+.pdf-comp .pdf-table{ margin-top:0; }
+.pdf-comp .pdf-table th, .pdf-comp .pdf-table td{ padding:10px 12px; font-size:14px; }
+.pdf-comp .pdf-table tfoot td{ font-weight:800; background:#F7F7F7; }
